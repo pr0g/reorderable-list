@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  @font-face {
+    font-family: 'DepartureMono';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src:local('DepartureMono-Regular'), url(/src/assets/fonts/DepartureMono-Regular.woff) format('woff');
+  }
+}

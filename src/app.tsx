@@ -9,8 +9,8 @@ export const App = () => {
   return (
     <>
       <div></div>
-      <h1 className="text-3xl font-bold underline bg-gray-300">demo app</h1>
-      <button onClick={() => setCount(count + 1)}>count is: {count}</button>
+      <h1 className="text-3xl font-bold underline bg-gray-300">DEMO APP</h1>
+      <button onClick={() => setCount(count + 1)}>The count is: {count}</button>
     </>
   );
 };
