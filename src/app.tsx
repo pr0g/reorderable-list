@@ -1,4 +1,4 @@
-import { experimental_useEffectEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 export const App = () => {
   const [count, setCount] = useState(0);
@@ -7,20 +7,13 @@ export const App = () => {
   
   useEffect(() => {
     setCombined(name + ' ' + count);
-  }, [count]);
-  
-  useEffect(() => {
-    console.log(combined);
-  },[combined]);
-
-  experimental_useEffectEvent(() => {});
+  }, [name, count]);
 
   return (
     <>
-      <div></div>
       <h1 className="sm:text-3xl text-2xl font-bold underline bg-gray-300">DEMO APP</h1>
-      <button className="block" onClick={() => setCount(count + 1)}>The count is: {count}</button>
-      <button className="block" onClick={() => setName((name) => name + 'a')}>Change name</button>
+      <button className="block" onClick={() => setCount((count) => count + 1)}>The count is: {count}</button>
+      <button className="block" onClick={() => setName((name) => name + 'a')}>Change name - {combined}</button>
     </>
   );
 };
