@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 
 export function ReorderableList() {
-  const [items,] = useState<string[]>([
+  const [items] = useState<string[]>([
     "Item 1",
     "Item 2",
     "Item 3",
@@ -18,45 +18,54 @@ export function ReorderableList() {
 
   return (
     <div className="flex flex-col min-w-[300px]">
-      <ul className="">
+      <ul>
         {items.map((item, index) => {
           return (
-            <li
-              key={item}
-              onMouseDown={(e) => {
-                const elementBounds = e.currentTarget.getBoundingClientRect();
-                const initialClickOffset = e.clientY - elementBounds.top;
+            <Fragment key={index}>
+              {movingIndex === index && (
+                <li
+                  key={`placeholder-${index}`}
+                  className={`select-none bg-slate-400 rounded-lg`}
+                >
+                  <br />
+                </li>
+              )}
+              <li
+                key={item}
+                onMouseDown={(e) => {
+                  const elementBounds = e.currentTarget.getBoundingClientRect();
+                  const initialClickOffset = e.clientY - elementBounds.top;
 
-                console.log("offset top", e.currentTarget.offsetTop);
-                console.log("bounds top", elementBounds.top);
-
-                const nextMousePosition = e.clientY + window.scrollY;
-                setMouseVerticalPosition(nextMousePosition);
-
-                setMovingIndex(index);
-                setVerticalClickOffset(initialClickOffset);
-              }}
-              onMouseUp={() => {
-                setMovingIndex(-1);
-                setVerticalClickOffset(0);
-              }}
-              onMouseMove={(e) => {
-                if (movingIndex !== -1) {
                   const nextMousePosition = e.clientY + window.scrollY;
                   setMouseVerticalPosition(nextMousePosition);
+
+                  setMovingIndex(index);
+                  setVerticalClickOffset(initialClickOffset);
+                }}
+                onMouseUp={() => {
+                  setMovingIndex(-1);
+                  setVerticalClickOffset(0);
+                }}
+                onMouseMove={(e) => {
+                  if (movingIndex !== -1) {
+                    const nextMousePosition = e.clientY + window.scrollY;
+                    setMouseVerticalPosition(nextMousePosition);
+                  }
+                }}
+                className={`select-none bg-slate-500 rounded-lg ${
+                  index === movingIndex ? "text-red-500 absolute" : "text-black"
+                }`}
+                style={
+                  index === movingIndex
+                    ? {
+                        top: `${mouseVerticalPosition - verticalClickOffset}px`,
+                      }
+                    : {}
                 }
-              }}
-              className={`select-none bg-slate-500 rounded-lg ${
-                index === movingIndex ? "text-red-500 absolute" : "text-black"
-              }`}
-              style={
-                index === movingIndex
-                  ? { top: `${mouseVerticalPosition - verticalClickOffset}px` }
-                  : {}
-              }
-            >
-              {item}
-            </li>
+              >
+                {item}
+              </li>
+            </Fragment>
           );
         })}
       </ul>
