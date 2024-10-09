@@ -23,7 +23,7 @@ export const App = () => {
         Change name - {combined}
       </button>
 
-      <div className="flex flex-row justify-center items-center py-40">
+      <div className="flex flex-row justify-center py-40">
         <ReorderableList />
       </div>
     </>

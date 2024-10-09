@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export function ReorderableList() {
-  const [items, setItems] = useState<string[]>([
+  const [items,] = useState<string[]>([
     "Item 1",
     "Item 2",
     "Item 3",
@@ -13,15 +13,47 @@ export function ReorderableList() {
   ]);
 
   const [movingIndex, setMovingIndex] = useState(-1);
+  const [mouseVerticalPosition, setMouseVerticalPosition] = useState(0);
+  const [verticalClickOffset, setVerticalClickOffset] = useState(0);
 
   return (
-    <div>
-      <ul>
+    <div className="flex flex-col min-w-[300px]">
+      <ul className="">
         {items.map((item, index) => {
           return (
             <li
-              onMouseDown={() => setMovingIndex(index)}
-              onMouseUp={() => setMovingIndex(-1)}
+              key={item}
+              onMouseDown={(e) => {
+                const elementBounds = e.currentTarget.getBoundingClientRect();
+                const initialClickOffset = e.clientY - elementBounds.top;
+
+                console.log("offset top", e.currentTarget.offsetTop);
+                console.log("bounds top", elementBounds.top);
+
+                const nextMousePosition = e.clientY + window.scrollY;
+                setMouseVerticalPosition(nextMousePosition);
+
+                setMovingIndex(index);
+                setVerticalClickOffset(initialClickOffset);
+              }}
+              onMouseUp={() => {
+                setMovingIndex(-1);
+                setVerticalClickOffset(0);
+              }}
+              onMouseMove={(e) => {
+                if (movingIndex !== -1) {
+                  const nextMousePosition = e.clientY + window.scrollY;
+                  setMouseVerticalPosition(nextMousePosition);
+                }
+              }}
+              className={`select-none bg-slate-500 rounded-lg ${
+                index === movingIndex ? "text-red-500 absolute" : "text-black"
+              }`}
+              style={
+                index === movingIndex
+                  ? { top: `${mouseVerticalPosition - verticalClickOffset}px` }
+                  : {}
+              }
             >
               {item}
             </li>
@@ -29,6 +61,7 @@ export function ReorderableList() {
         })}
       </ul>
       <p>Moving index: {movingIndex}</p>
+      <p>Offset: {verticalClickOffset}</p>
     </div>
   );
 }
