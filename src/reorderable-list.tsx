@@ -1,4 +1,4 @@
-import { useState, Fragment, useCallback, useRef } from "react";
+import { useState, Fragment, useRef } from "react";
 
 export function ReorderableList() {
   const [items] = useState<string[]>([
@@ -18,12 +18,8 @@ export function ReorderableList() {
   const mouseDownVerticalPosition = useRef(0);
   const [mouseDelta, setMouseDelta] = useState(0);
 
-  const [verticalClickOffset, setVerticalClickOffset] = useState(0);
-
   const ulRef = useRef<HTMLUListElement | null>(null);
   const liRef = useRef<HTMLLIElement | null>(null);
-
-  const [, redraw] = useState(0);
 
   return (
     <div className="flex flex-col min-w-[300px]">
@@ -37,10 +33,6 @@ export function ReorderableList() {
                   setSelectedIndex(index);
                   setAvailableIndex(index);
                   liRef.current = e.currentTarget;
-                  console.log(
-                    "bounding rect top",
-                    liRef.current.getBoundingClientRect().top
-                  );
                   e.currentTarget.setPointerCapture(e.pointerId);
                   mouseDownVerticalPosition.current = e.clientY;
                   setMouseDelta(0);
@@ -58,63 +50,47 @@ export function ReorderableList() {
                     return;
                   }
 
-                  console.log("pointer move");
-
+                  // liBefore?.getBoundingClientRect().bottom - liBefore?.getBoundingClientRect().top;
                   const height = 24;
-                  // const height =
-                  //  liBefore?.getBoundingClientRect().bottom -
-                  //  liBefore?.getBoundingClientRect().top;
 
                   setMouseDelta(e.clientY - mouseDownVerticalPosition.current);
 
                   const indexBefore = availableIndex - 1;
-                  console.log("indexBefore", indexBefore);
                   if (indexBefore >= 0) {
                     if (liRef.current) {
                       const top =
                         ulRef.current!.getBoundingClientRect().top +
-                        indexBefore * 24;
+                        indexBefore * height;
                       if (
                         liRef.current?.getBoundingClientRect().top <
                         top + height / 2
                       ) {
-                        console.log("swap before");
                         setAvailableIndex(
                           (currentAvailableIndex) => currentAvailableIndex - 1
                         );
-                        redraw(0);
-                        return;
                       }
                     }
                   }
 
-                  console.log("pointer move between");
-
                   const indexAfter = availableIndex + 1;
-                  console.log("indexAfter", indexAfter);
                   if (indexAfter < items.length) {
-                    // const liAfter = ulRef.current?.children[indexAfter];
                     if (liRef.current) {
                       const top =
                         ulRef.current!.getBoundingClientRect().top +
-                        indexAfter * 24;
+                        indexAfter * height;
                       if (
                         liRef.current?.getBoundingClientRect().bottom >=
                         top + height / 2
                       ) {
-                        console.log("swap after");
                         setAvailableIndex(
                           (currentAvailableIndex) => currentAvailableIndex + 1
                         );
-                        return;
                       }
                     }
                   }
                 }}
                 className={`select-none bg-slate-500 rounded-lg ${
-                  index === selectedIndex
-                    ? "text-red-500 relative"
-                    : "text-black"
+                  index === selectedIndex ? "text-red-500" : "text-black"
                 }`}
                 style={
                   index === selectedIndex
@@ -124,10 +100,14 @@ export function ReorderableList() {
                     : index >= availableIndex && index < selectedIndex
                     ? {
                         transform: `translateY(${index + 1 * 24}px)`,
+                        // position: "relative",
+                        // top: `${index + 1 * 24}px`
                       }
                     : index <= availableIndex && index > selectedIndex
                     ? {
                         transform: `translateY(${index - 1 * 24}px)`,
+                        // position: "relative",
+                        // top: `${index - 1 * 24}px`
                       }
                     : {}
                 }
@@ -139,7 +119,6 @@ export function ReorderableList() {
         })}
       </ul>
       <p>Moving index: {selectedIndex}</p>
-      <p>Offset: {verticalClickOffset}</p>
     </div>
   );
 }
