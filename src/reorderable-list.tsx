@@ -12,38 +12,18 @@ export function ReorderableList() {
     "Item 8",
   ]);
 
-  const movingIndex = useRef(-1);
-  const availableIndex = useRef(-1);
-  const [mouseVerticalPosition, setMouseVerticalPosition] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [availableIndex, setAvailableIndex] = useState(-1);
+
+  const mouseDownVerticalPosition = useRef(0);
+  const [mouseDelta, setMouseDelta] = useState(0);
+
   const [verticalClickOffset, setVerticalClickOffset] = useState(0);
 
   const ulRef = useRef<HTMLUListElement | null>(null);
   const liRef = useRef<HTMLLIElement | null>(null);
 
-  // const onMouseMove = useCallback((e: MouseEvent) => {
-  //   console.log("mouse moving");
-  //   console.log("moving index: ", movingIndex);
-  //   // if (movingIndex !== -1) {
-  //     console.log("mouse moving index", movingIndex);
-  //     const nextMousePosition = e.clientY + window.scrollY;
-  //     setMouseVerticalPosition(nextMousePosition);
-  //   // }
-  // }, [movingIndex]);
-
-  // const onMouseUp = () => {
-  //   setMovingIndex(-1);
-  //   setVerticalClickOffset(0);
-
-  //   console.log("removing mouse move event listener");
-  //   document.removeEventListener("mousemove", onMouseMove);
-  //   document.removeEventListener("mouseup", onMouseUp)
-  // };
-
-  // const onMouseDown = () => {
-  //   console.log("adding mouse move event listener");
-  //   document.addEventListener("mousemove", onMouseMove);
-  //   document.addEventListener("mouseup", onMouseUp)
-  // };
+  const [, redraw] = useState(0);
 
   return (
     <div className="flex flex-col min-w-[300px]">
@@ -51,99 +31,103 @@ export function ReorderableList() {
         {items.map((item, index) => {
           return (
             <Fragment key={index}>
-              {availableIndex.current === index && (
-                <li
-                  key={`placeholder-${index}`}
-                  className={`select-none bg-slate-400 rounded-lg`}
-                >
-                  <br />
-                </li>
-              )}
               <li
                 key={item}
                 onPointerDown={(e) => {
-                  if (ulRef.current !== null) {
-                    for (const element of ulRef.current.children) {
-                      if (element instanceof HTMLLIElement) {
-                        const li = element as HTMLLIElement;
-                        const liBoundingRect = li.getBoundingClientRect();
-                        if (
-                          e.clientY + window.scrollY >=
-                            liBoundingRect.top + window.scrollY &&
-                          e.clientY + window.scrollY <
-                            liBoundingRect.bottom + window.scrollY
-                        ) {
-                          liRef.current = li;
-                          li.setPointerCapture(e.pointerId);
-                        }
+                  setSelectedIndex(index);
+                  setAvailableIndex(index);
+                  liRef.current = e.currentTarget;
+                  console.log(
+                    "bounding rect top",
+                    liRef.current.getBoundingClientRect().top
+                  );
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  mouseDownVerticalPosition.current = e.clientY;
+                  setMouseDelta(0);
+                }}
+                onPointerUp={(e) => {
+                  const [extracted] = items.splice(selectedIndex, 1);
+                  items.splice(availableIndex, 0, extracted);
+                  e.currentTarget.releasePointerCapture(e.pointerId);
+                  setSelectedIndex(-1);
+                  setAvailableIndex(-1);
+                  setMouseDelta(0);
+                }}
+                onPointerMove={(e) => {
+                  if (availableIndex === -1) {
+                    return;
+                  }
+
+                  console.log("pointer move");
+
+                  const height = 24;
+                  // const height =
+                  //  liBefore?.getBoundingClientRect().bottom -
+                  //  liBefore?.getBoundingClientRect().top;
+
+                  setMouseDelta(e.clientY - mouseDownVerticalPosition.current);
+
+                  const indexBefore = availableIndex - 1;
+                  console.log("indexBefore", indexBefore);
+                  if (indexBefore >= 0) {
+                    if (liRef.current) {
+                      const top =
+                        ulRef.current!.getBoundingClientRect().top +
+                        indexBefore * 24;
+                      if (
+                        liRef.current?.getBoundingClientRect().top <
+                        top + height / 2
+                      ) {
+                        console.log("swap before");
+                        setAvailableIndex(
+                          (currentAvailableIndex) => currentAvailableIndex - 1
+                        );
+                        redraw(0);
+                        return;
                       }
                     }
                   }
 
-                  const elementBounds = e.currentTarget.getBoundingClientRect();
-                  const initialClickOffset = e.clientY - elementBounds.top;
+                  console.log("pointer move between");
 
-                  const nextMousePosition = e.clientY + window.scrollY;
-                  setMouseVerticalPosition(nextMousePosition);
-
-                  console.log("setting mouse move index", index);
-                  movingIndex.current = index;
-                  availableIndex.current = index;
-                  setVerticalClickOffset(initialClickOffset);
-                }}
-                onPointerUp={(e) => {
-                  movingIndex.current = -1;
-                  availableIndex.current = -1;
-                  setVerticalClickOffset(0);
-                  liRef.current?.releasePointerCapture(e.pointerId);
-                  liRef.current = null;
-                }}
-                onPointerMove={(e) => {
-                  if (movingIndex.current !== -1) {
-                    const nextMousePosition = e.clientY + window.scrollY;
-                    setMouseVerticalPosition(nextMousePosition);
-                    if (ulRef.current !== null) {
-                      for (
-                        let childIndex = 0, listIndex = 0;
-                        childIndex < ulRef.current.children.length;
-                        childIndex++
+                  const indexAfter = availableIndex + 1;
+                  console.log("indexAfter", indexAfter);
+                  if (indexAfter < items.length) {
+                    // const liAfter = ulRef.current?.children[indexAfter];
+                    if (liRef.current) {
+                      const top =
+                        ulRef.current!.getBoundingClientRect().top +
+                        indexAfter * 24;
+                      if (
+                        liRef.current?.getBoundingClientRect().bottom >=
+                        top + height / 2
                       ) {
-                        const element = ulRef.current.children[childIndex];
-                        if (element instanceof HTMLLIElement) {
-                          const li = element as HTMLLIElement;
-                          // skip element we're dragging
-                          if (li === liRef.current) {
-                            continue;
-                          }
-                          const liBoundingRect = li.getBoundingClientRect();
-                          if (
-                            nextMousePosition >=
-                              liBoundingRect.top + window.scrollY &&
-                            nextMousePosition <
-                              liBoundingRect.bottom + window.scrollY
-                          ) {
-                            if (childIndex !== availableIndex.current) {
-                              availableIndex.current = listIndex;
-                              console.log("available index", listIndex);
-                            }
-                          }
-                        }
-                        // keep separate list index to skip 'phantom' list element
-                        // inserted when dragging
-                        listIndex++;
+                        console.log("swap after");
+                        setAvailableIndex(
+                          (currentAvailableIndex) => currentAvailableIndex + 1
+                        );
+                        return;
                       }
                     }
                   }
                 }}
                 className={`select-none bg-slate-500 rounded-lg ${
-                  index === movingIndex.current
-                    ? "text-red-500 absolute"
+                  index === selectedIndex
+                    ? "text-red-500 relative"
                     : "text-black"
                 }`}
                 style={
-                  index === movingIndex.current
+                  index === selectedIndex
                     ? {
-                        top: `${mouseVerticalPosition - verticalClickOffset}px`,
+                        transform: `translateY(${mouseDelta}px)`,
+                      }
+                    : index >= availableIndex && index < selectedIndex
+                    ? {
+                        transform: `translateY(${index + 1 * 24}px)`,
+                      }
+                    : index <= availableIndex && index > selectedIndex
+                    ? {
+                        transform: `translateY(${index - 1 * 24}px)`,
                       }
                     : {}
                 }
@@ -154,7 +138,7 @@ export function ReorderableList() {
           );
         })}
       </ul>
-      <p>Moving index: {movingIndex.current}</p>
+      <p>Moving index: {selectedIndex}</p>
       <p>Offset: {verticalClickOffset}</p>
     </div>
   );
