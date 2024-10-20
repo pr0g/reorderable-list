@@ -21,6 +21,8 @@ export function ReorderableList() {
   const ulRef = useRef<HTMLUListElement | null>(null);
   const liRef = useRef<HTMLLIElement | null>(null);
 
+  const itemHeight = 24; // calculated from liRef client top/bottom bounds
+
   return (
     <div className="flex flex-col min-w-[300px]">
       <ul ref={ulRef}>
@@ -51,7 +53,6 @@ export function ReorderableList() {
                   }
 
                   // liBefore?.getBoundingClientRect().bottom - liBefore?.getBoundingClientRect().top;
-                  const height = 24;
 
                   setMouseDelta(e.clientY - mouseDownVerticalPosition.current);
 
@@ -60,10 +61,10 @@ export function ReorderableList() {
                     if (liRef.current) {
                       const top =
                         ulRef.current!.getBoundingClientRect().top +
-                        indexBefore * height;
+                        indexBefore * itemHeight;
                       if (
                         liRef.current?.getBoundingClientRect().top <
-                        top + height / 2
+                        top + itemHeight / 2
                       ) {
                         setAvailableIndex(
                           (currentAvailableIndex) => currentAvailableIndex - 1
@@ -77,10 +78,10 @@ export function ReorderableList() {
                     if (liRef.current) {
                       const top =
                         ulRef.current!.getBoundingClientRect().top +
-                        indexAfter * height;
+                        indexAfter * itemHeight;
                       if (
                         liRef.current?.getBoundingClientRect().bottom >=
-                        top + height / 2
+                        top + itemHeight / 2
                       ) {
                         setAvailableIndex(
                           (currentAvailableIndex) => currentAvailableIndex + 1
@@ -99,15 +100,11 @@ export function ReorderableList() {
                       }
                     : index >= availableIndex && index < selectedIndex
                     ? {
-                        transform: `translateY(${index + 1 * 24}px)`,
-                        // position: "relative",
-                        // top: `${index + 1 * 24}px`
+                        transform: `translateY(${itemHeight}px)`,
                       }
                     : index <= availableIndex && index > selectedIndex
                     ? {
-                        transform: `translateY(${index - 1 * 24}px)`,
-                        // position: "relative",
-                        // top: `${index - 1 * 24}px`
+                        transform: `translateY(${-itemHeight}px)`,
                       }
                     : {}
                 }
