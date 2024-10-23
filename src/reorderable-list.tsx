@@ -21,7 +21,7 @@ export function ReorderableList() {
   const ulRef = useRef<HTMLUListElement | null>(null);
   const liRef = useRef<HTMLLIElement | null>(null);
 
-  const itemHeight = 24; // calculated from liRef client top/bottom bounds
+  const itemHeight = 24 + 4; // calculated from liRef client top/bottom bounds (4px margin)
 
   return (
     <div className="flex flex-col min-w-[300px]">
@@ -90,8 +90,8 @@ export function ReorderableList() {
                     }
                   }
                 }}
-                className={`select-none bg-slate-500 rounded-lg ${
-                  index === selectedIndex ? "text-red-500" : "text-black"
+                className={`select-none bg-slate-500 rounded-lg my-1 ${
+                  index === selectedIndex ? "text-red-500" : "text-black transition-transform duration-300"
                 }`}
                 style={
                   index === selectedIndex
