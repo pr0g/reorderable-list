@@ -96,7 +96,7 @@ export function ReorderableList() {
                 style={
                   index === selectedIndex
                     ? {
-                        transform: `translateY(${mouseDelta}px)`,
+                        transform: `translateY(${mouseDelta}px) scale(1.1)`,
                       }
                     : index >= availableIndex && index < selectedIndex
                     ? {
