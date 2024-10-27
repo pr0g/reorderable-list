@@ -91,7 +91,9 @@ export function ReorderableList() {
                   }
                 }}
                 className={`select-none bg-slate-500 rounded-lg my-1 ${
-                  index === selectedIndex ? "text-red-500" : "text-black transition-transform duration-300"
+                  index === selectedIndex
+                    ? "text-red-500"
+                    : "text-black transition-transform duration-300"
                 }`}
                 style={
                   index === selectedIndex
