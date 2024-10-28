@@ -45,11 +45,15 @@ export function ReorderableList() {
   ) => {
     const style: React.CSSProperties = {};
     if (index === hoveredIndex) {
-      style.transform = `translateY(${mouseDelta}px) scale(1.1)`;
+      style.transform = `scale(1.1)`;
+      style.position = "relative";
+      style.top = `${mouseDelta}px`;
     } else if (index === justChangedIndex) {
       style.transform = `translateY(${justChangedMouseDelta}px) scale(1.1)`;
     } else if (index === movingIndex) {
-      style.transform = `translateY(${mouseDelta}px) scale(1.1)`;
+      style.transform = `scale(1.1)`;
+      style.position = "relative";
+      style.top = `${mouseDelta}px`;
     } else if (index >= availableIndex && index < movingIndex) {
       style.transform = `translateY(${itemHeight}px)`;
     } else if (index <= availableIndex && index > movingIndex) {
@@ -92,11 +96,14 @@ export function ReorderableList() {
                   setMouseDelta(0);
                 }}
                 onPointerMove={(e) => {
+                  if (justChangedHoverIndex !== -1 || availableIndex !== -1) {
+                    setMouseDelta(
+                      e.clientY - mouseDownVerticalPosition.current
+                    );
+                  }
                   if (availableIndex === -1) {
                     return;
                   }
-
-                  setMouseDelta(e.clientY - mouseDownVerticalPosition.current);
 
                   const indexBefore = availableIndex - 1;
                   if (indexBefore >= 0) {
