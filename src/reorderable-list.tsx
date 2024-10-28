@@ -14,11 +14,14 @@ export function ReorderableList() {
 
   const [movingIndex, setMovingIndex] = useState(-1);
   const [availableIndex, setAvailableIndex] = useState(-1);
+
   const [justChangedIndex, setJustChangedIndex] = useState(-1);
+  const [justChangedMouseDelta, setJustChangedMouseDelta] = useState(0);
 
   useEffect(() => {
     if (justChangedIndex !== -1) {
       setJustChangedIndex(-1);
+      setJustChangedMouseDelta(0);
     }
   }, [justChangedIndex]);
 
@@ -40,7 +43,7 @@ export function ReorderableList() {
   ) => {
     const style: React.CSSProperties = {};
     if (index === justChangedIndex) {
-      style.transform = `scale(1.1)`;
+      style.transform = `translateY(${justChangedMouseDelta}px) scale(1.1)`;
     } else if (index === movingIndex) {
       style.transform = `translateY(${mouseDelta}px) scale(1.1)`;
     } else if (index >= availableIndex && index < movingIndex) {
@@ -72,6 +75,9 @@ export function ReorderableList() {
                   items.splice(availableIndex, 0, extracted);
                   e.currentTarget.releasePointerCapture(e.pointerId);
                   setJustChangedIndex(availableIndex);
+                  setJustChangedMouseDelta(
+                    mouseDelta + (movingIndex - availableIndex) * itemHeight
+                  );
                   setMovingIndex(-1);
                   setAvailableIndex(-1);
                   setMouseDelta(0);
