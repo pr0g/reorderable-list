@@ -12,7 +12,7 @@ export function ReorderableList() {
     "Item 8",
   ]);
 
-  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [movingIndex, setMovingIndex] = useState(-1);
   const [availableIndex, setAvailableIndex] = useState(-1);
 
   const mouseDownVerticalPosition = useRef(0);
@@ -23,6 +23,24 @@ export function ReorderableList() {
 
   const itemHeight = 24 + 4; // calculated from liRef client top/bottom bounds (4px margin)
 
+  const getStyle = (
+    index: number,
+    movingIndex: number,
+    availableIndex: number,
+    mouseDelta: number,
+    itemHeight: number
+  ) => {
+    const style: React.CSSProperties = {};
+    if (index === movingIndex) {
+      style.transform = `translateY(${mouseDelta}px) scale(1.1)`;
+    } else if (index >= availableIndex && index < movingIndex) {
+      style.transform = `translateY(${itemHeight}px)`;
+    } else if (index <= availableIndex && index > movingIndex) {
+      style.transform = `translateY(${-itemHeight}px)`;
+    }
+    return style;
+  };
+
   return (
     <div className="flex flex-col min-w-[300px]">
       <ul ref={ulRef}>
@@ -32,7 +50,7 @@ export function ReorderableList() {
               <li
                 key={item}
                 onPointerDown={(e) => {
-                  setSelectedIndex(index);
+                  setMovingIndex(index);
                   setAvailableIndex(index);
                   liRef.current = e.currentTarget;
                   e.currentTarget.setPointerCapture(e.pointerId);
@@ -40,10 +58,10 @@ export function ReorderableList() {
                   setMouseDelta(0);
                 }}
                 onPointerUp={(e) => {
-                  const [extracted] = items.splice(selectedIndex, 1);
+                  const [extracted] = items.splice(movingIndex, 1);
                   items.splice(availableIndex, 0, extracted);
                   e.currentTarget.releasePointerCapture(e.pointerId);
-                  setSelectedIndex(-1);
+                  setMovingIndex(-1);
                   setAvailableIndex(-1);
                   setMouseDelta(0);
                 }}
@@ -91,25 +109,17 @@ export function ReorderableList() {
                   }
                 }}
                 className={`select-none bg-slate-500 rounded-lg my-1 ${
-                  index === selectedIndex
+                  index === movingIndex
                     ? "text-red-500"
                     : "text-black transition-transform duration-300"
                 }`}
-                style={
-                  index === selectedIndex
-                    ? {
-                        transform: `translateY(${mouseDelta}px) scale(1.1)`,
-                      }
-                    : index >= availableIndex && index < selectedIndex
-                    ? {
-                        transform: `translateY(${itemHeight}px)`,
-                      }
-                    : index <= availableIndex && index > selectedIndex
-                    ? {
-                        transform: `translateY(${-itemHeight}px)`,
-                      }
-                    : {}
-                }
+                style={getStyle(
+                  index,
+                  movingIndex,
+                  availableIndex,
+                  mouseDelta,
+                  itemHeight
+                )}
               >
                 {item}
               </li>
@@ -117,7 +127,7 @@ export function ReorderableList() {
           );
         })}
       </ul>
-      <p>Moving index: {selectedIndex}</p>
+      <p>Moving index: {movingIndex}</p>
     </div>
   );
 }
