@@ -43,6 +43,12 @@ export function ReorderableList() {
     mouseDelta: number,
     itemHeight: number
   ) => {
+    const theIndex =
+      movingIndex !== -1
+        ? movingIndex
+        : justChangedHoverIndex !== -1
+        ? justChangedHoverIndex
+        : -1;
     const style: React.CSSProperties = {};
     if (index === hoveredIndex) {
       style.transform = `scale(1.1)`;
@@ -54,9 +60,9 @@ export function ReorderableList() {
       style.transform = `scale(1.1)`;
       style.position = "relative";
       style.top = `${mouseDelta}px`;
-    } else if (index >= availableIndex && index < movingIndex) {
+    } else if (index >= availableIndex && index < theIndex) {
       style.transform = `translateY(${itemHeight}px)`;
-    } else if (index <= availableIndex && index > movingIndex) {
+    } else if (index <= availableIndex && index > theIndex) {
       style.transform = `translateY(${-itemHeight}px)`;
     }
     return style;
@@ -73,17 +79,25 @@ export function ReorderableList() {
                 onTransitionEnd={() => {
                   if (index === justChangedHoverIndex) {
                     setMovingIndex(index);
-                    setAvailableIndex(index);
                     setJustChangedHoverIndex(-1);
                   }
                 }}
                 onPointerDown={(e) => {
+                  setAvailableIndex(index);
                   setJustChangedHoverIndex(index);
                   liRef.current = e.currentTarget;
                   e.currentTarget.setPointerCapture(e.pointerId);
                   mouseDownVerticalPosition.current = e.clientY;
                 }}
                 onPointerUp={(e) => {
+                  // cancel move before animation ends and sets movingIndex
+                  if (movingIndex === -1) {
+                    setAvailableIndex(-1);
+                    setJustChangedHoverIndex(-1);
+                    e.currentTarget.releasePointerCapture(e.pointerId);
+                    setMouseDelta(0);
+                    return;
+                  }
                   const [extracted] = items.splice(movingIndex, 1);
                   items.splice(availableIndex, 0, extracted);
                   e.currentTarget.releasePointerCapture(e.pointerId);
