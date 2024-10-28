@@ -17,6 +17,7 @@ export function ReorderableList() {
 
   const [justChangedIndex, setJustChangedIndex] = useState(-1);
   const [justChangedMouseDelta, setJustChangedMouseDelta] = useState(0);
+  const [justChangedHoverIndex, setJustChangedHoverIndex] = useState(-1);
 
   useEffect(() => {
     if (justChangedIndex !== -1) {
@@ -31,18 +32,21 @@ export function ReorderableList() {
   const ulRef = useRef<HTMLUListElement | null>(null);
   const liRef = useRef<HTMLLIElement | null>(null);
 
-  const itemHeight = 24 + 4; // calculated from liRef client top/bottom bounds (4px margin)
+  const itemHeight = 24 + 4; // calculated from liRef client top/bottom getBoundingClientRect (+ 4px margin)
 
   const getStyle = (
     index: number,
     movingIndex: number,
+    hoveredIndex: number,
     justChangedIndex: number,
     availableIndex: number,
     mouseDelta: number,
     itemHeight: number
   ) => {
     const style: React.CSSProperties = {};
-    if (index === justChangedIndex) {
+    if (index === hoveredIndex) {
+      style.transform = `translateY(${mouseDelta}px) scale(1.1)`;
+    } else if (index === justChangedIndex) {
       style.transform = `translateY(${justChangedMouseDelta}px) scale(1.1)`;
     } else if (index === movingIndex) {
       style.transform = `translateY(${mouseDelta}px) scale(1.1)`;
@@ -62,13 +66,18 @@ export function ReorderableList() {
             <Fragment key={index}>
               <li
                 key={item}
+                onTransitionEnd={() => {
+                  if (index === justChangedHoverIndex) {
+                    setMovingIndex(index);
+                    setAvailableIndex(index);
+                    setJustChangedHoverIndex(-1);
+                  }
+                }}
                 onPointerDown={(e) => {
-                  setMovingIndex(index);
-                  setAvailableIndex(index);
+                  setJustChangedHoverIndex(index);
                   liRef.current = e.currentTarget;
                   e.currentTarget.setPointerCapture(e.pointerId);
                   mouseDownVerticalPosition.current = e.clientY;
-                  setMouseDelta(0);
                 }}
                 onPointerUp={(e) => {
                   const [extracted] = items.splice(movingIndex, 1);
@@ -86,8 +95,6 @@ export function ReorderableList() {
                   if (availableIndex === -1) {
                     return;
                   }
-
-                  // liBefore?.getBoundingClientRect().bottom - liBefore?.getBoundingClientRect().top;
 
                   setMouseDelta(e.clientY - mouseDownVerticalPosition.current);
 
@@ -133,6 +140,7 @@ export function ReorderableList() {
                 style={getStyle(
                   index,
                   movingIndex,
+                  justChangedHoverIndex,
                   justChangedIndex,
                   availableIndex,
                   mouseDelta,
