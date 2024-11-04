@@ -32,7 +32,17 @@ export function ReorderableList() {
   const ulRef = useRef<HTMLUListElement | null>(null);
   const liRef = useRef<HTMLLIElement | null>(null);
 
-  const itemHeight = 24 + 4; // calculated from liRef client top/bottom getBoundingClientRect (+ 4px margin)
+  // const itemHeight = 24 + 4; // calculated from liRef client top/bottom getBoundingClientRect (+ 4px margin)
+  const itemWidth = 69.2;
+
+  if (liRef.current !== null) {
+    console.log(
+      `width ${
+        liRef.current?.getBoundingClientRect().right -
+        liRef.current?.getBoundingClientRect().left
+      }`
+    );
+  }
 
   const getStyle = (
     index: number,
@@ -41,7 +51,7 @@ export function ReorderableList() {
     justChangedIndex: number,
     availableIndex: number,
     mouseDelta: number,
-    itemHeight: number
+    itemWidth: number
   ) => {
     const theIndex =
       movingIndex !== -1
@@ -53,24 +63,24 @@ export function ReorderableList() {
     if (index === hoveredIndex) {
       style.transform = `scale(1.1)`;
       style.position = "relative";
-      style.top = `${mouseDelta}px`;
+      style.left = `${mouseDelta}px`;
     } else if (index === justChangedIndex) {
-      style.transform = `translateY(${justChangedMouseDelta}px) scale(1.1)`;
+      style.transform = `translateX(${justChangedMouseDelta}px) scale(1.1)`;
     } else if (index === movingIndex) {
       style.transform = `scale(1.1)`;
       style.position = "relative";
-      style.top = `${mouseDelta}px`;
+      style.left = `${mouseDelta}px`;
     } else if (index >= availableIndex && index < theIndex) {
-      style.transform = `translateY(${itemHeight}px)`;
+      style.transform = `translateX(${itemWidth}px)`;
     } else if (index <= availableIndex && index > theIndex) {
-      style.transform = `translateY(${-itemHeight}px)`;
+      style.transform = `translateX(${-itemWidth}px)`;
     }
     return style;
   };
 
   return (
     <div className="flex flex-col min-w-[300px]">
-      <ul ref={ulRef}>
+      <ul ref={ulRef} className="flex flex-wrap space-x-2">
         {items.map((item, index) => {
           return (
             <Fragment key={index}>
@@ -87,7 +97,7 @@ export function ReorderableList() {
                   setJustChangedHoverIndex(index);
                   liRef.current = e.currentTarget;
                   e.currentTarget.setPointerCapture(e.pointerId);
-                  mouseDownVerticalPosition.current = e.clientY;
+                  mouseDownVerticalPosition.current = e.clientX;
                 }}
                 onPointerUp={(e) => {
                   // cancel move before animation ends and sets movingIndex
@@ -103,7 +113,7 @@ export function ReorderableList() {
                   e.currentTarget.releasePointerCapture(e.pointerId);
                   setJustChangedIndex(availableIndex);
                   setJustChangedMouseDelta(
-                    mouseDelta + (movingIndex - availableIndex) * itemHeight
+                    mouseDelta + (movingIndex - availableIndex) * itemWidth
                   );
                   setMovingIndex(-1);
                   setAvailableIndex(-1);
@@ -112,7 +122,7 @@ export function ReorderableList() {
                 onPointerMove={(e) => {
                   if (justChangedHoverIndex !== -1 || availableIndex !== -1) {
                     setMouseDelta(
-                      e.clientY - mouseDownVerticalPosition.current
+                      e.clientX - mouseDownVerticalPosition.current
                     );
                   }
                   if (availableIndex === -1) {
@@ -122,12 +132,12 @@ export function ReorderableList() {
                   const indexBefore = availableIndex - 1;
                   if (indexBefore >= 0) {
                     if (liRef.current) {
-                      const top =
-                        ulRef.current!.getBoundingClientRect().top +
-                        indexBefore * itemHeight;
+                      const left =
+                        ulRef.current!.getBoundingClientRect().left +
+                        indexBefore * itemWidth;
                       if (
-                        liRef.current?.getBoundingClientRect().top <
-                        top + itemHeight / 2
+                        liRef.current?.getBoundingClientRect().left <
+                        left + itemWidth / 2
                       ) {
                         setAvailableIndex(
                           (currentAvailableIndex) => currentAvailableIndex - 1
@@ -139,12 +149,12 @@ export function ReorderableList() {
                   const indexAfter = availableIndex + 1;
                   if (indexAfter < items.length) {
                     if (liRef.current) {
-                      const top =
-                        ulRef.current!.getBoundingClientRect().top +
-                        indexAfter * itemHeight;
+                      const left =
+                        ulRef.current!.getBoundingClientRect().left +
+                        indexAfter * itemWidth;
                       if (
-                        liRef.current?.getBoundingClientRect().bottom >=
-                        top + itemHeight / 2
+                        liRef.current?.getBoundingClientRect().right >=
+                        left + itemWidth / 2
                       ) {
                         setAvailableIndex(
                           (currentAvailableIndex) => currentAvailableIndex + 1
@@ -165,7 +175,7 @@ export function ReorderableList() {
                   justChangedIndex,
                   availableIndex,
                   mouseDelta,
-                  itemHeight
+                  itemWidth
                 )}
               >
                 {item}
