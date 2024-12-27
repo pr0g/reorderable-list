@@ -11,13 +11,17 @@ export function ReorderableList() {
     "Item 7",
     "Item 8",
   ]);
-
   const [movingIndex, setMovingIndex] = useState(-1);
   const [availableIndex, setAvailableIndex] = useState(-1);
-
   const [justChangedIndex, setJustChangedIndex] = useState(-1);
   const [justChangedMouseDelta, setJustChangedMouseDelta] = useState(0);
   const [justChangedHoverIndex, setJustChangedHoverIndex] = useState(-1);
+  const [mouseDelta, setMouseDelta] = useState(0);
+  const mouseDownVerticalPosition = useRef(0);
+  const ulRef = useRef<HTMLUListElement | null>(null);
+  const liRef = useRef<HTMLLIElement | null>(null);
+  // const itemHeight = 24 + 4; // calculated from liRef client top/bottom getBoundingClientRect (+ 4px margin)
+  const itemWidth = useRef(0);
 
   useEffect(() => {
     if (justChangedIndex !== -1) {
@@ -26,23 +30,13 @@ export function ReorderableList() {
     }
   }, [justChangedIndex]);
 
-  const mouseDownVerticalPosition = useRef(0);
-  const [mouseDelta, setMouseDelta] = useState(0);
-
-  const ulRef = useRef<HTMLUListElement | null>(null);
-  const liRef = useRef<HTMLLIElement | null>(null);
-
-  // const itemHeight = 24 + 4; // calculated from liRef client top/bottom getBoundingClientRect (+ 4px margin)
-  const itemWidth = 69.2;
-
-  if (liRef.current !== null) {
-    console.log(
-      `width ${
-        liRef.current?.getBoundingClientRect().right -
-        liRef.current?.getBoundingClientRect().left
-      }`
-    );
-  }
+  useEffect(() => {
+    return () => {
+      if (liRef.current) {
+        liRef.current = null;
+      }
+    };
+  }, []);
 
   const getStyle = (
     index: number,
@@ -79,8 +73,9 @@ export function ReorderableList() {
   };
 
   return (
-    <div className="flex flex-col min-w-[300px]">
-      <ul ref={ulRef} className="flex flex-wrap space-x-2">
+    // outside list
+    <div className="flex flex-col max-w-md">
+      <ul ref={ulRef} className="flex flex-wrap gap-x-2 max-w-md">
         {items.map((item, index) => {
           return (
             <Fragment key={index}>
@@ -96,6 +91,8 @@ export function ReorderableList() {
                   setAvailableIndex(index);
                   setJustChangedHoverIndex(index);
                   liRef.current = e.currentTarget;
+                  // note: space-x-2 is 8px (see +8 below)
+                  itemWidth.current = liRef.current.clientWidth + 8;
                   e.currentTarget.setPointerCapture(e.pointerId);
                   mouseDownVerticalPosition.current = e.clientX;
                 }}
@@ -113,7 +110,8 @@ export function ReorderableList() {
                   e.currentTarget.releasePointerCapture(e.pointerId);
                   setJustChangedIndex(availableIndex);
                   setJustChangedMouseDelta(
-                    mouseDelta + (movingIndex - availableIndex) * itemWidth
+                    mouseDelta +
+                      (movingIndex - availableIndex) * itemWidth.current
                   );
                   setMovingIndex(-1);
                   setAvailableIndex(-1);
@@ -128,16 +126,15 @@ export function ReorderableList() {
                   if (availableIndex === -1) {
                     return;
                   }
-
                   const indexBefore = availableIndex - 1;
                   if (indexBefore >= 0) {
                     if (liRef.current) {
                       const left =
                         ulRef.current!.getBoundingClientRect().left +
-                        indexBefore * itemWidth;
+                        indexBefore * itemWidth.current;
                       if (
-                        liRef.current?.getBoundingClientRect().left <
-                        left + itemWidth / 2
+                        liRef.current.getBoundingClientRect().left <
+                        left + itemWidth.current / 2
                       ) {
                         setAvailableIndex(
                           (currentAvailableIndex) => currentAvailableIndex - 1
@@ -151,10 +148,10 @@ export function ReorderableList() {
                     if (liRef.current) {
                       const left =
                         ulRef.current!.getBoundingClientRect().left +
-                        indexAfter * itemWidth;
+                        indexAfter * itemWidth.current;
                       if (
-                        liRef.current?.getBoundingClientRect().right >=
-                        left + itemWidth / 2
+                        liRef.current.getBoundingClientRect().right >=
+                        left + itemWidth.current / 2
                       ) {
                         setAvailableIndex(
                           (currentAvailableIndex) => currentAvailableIndex + 1
@@ -163,7 +160,7 @@ export function ReorderableList() {
                     }
                   }
                 }}
-                className={`select-none bg-slate-500 rounded-lg my-1 ${
+                className={`select-none bg-slate-500 rounded-lg my-1 min-w-24 text-center ${
                   index === movingIndex || index === justChangedIndex
                     ? "text-red-500 z-50"
                     : "text-black transition-transform duration-300"
@@ -175,7 +172,7 @@ export function ReorderableList() {
                   justChangedIndex,
                   availableIndex,
                   mouseDelta,
-                  itemWidth
+                  itemWidth.current
                 )}
               >
                 {item}
