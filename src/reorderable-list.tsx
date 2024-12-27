@@ -16,8 +16,8 @@ export function ReorderableList() {
   const [justChangedIndex, setJustChangedIndex] = useState(-1);
   const [justChangedMouseDelta, setJustChangedMouseDelta] = useState(0);
   const [justChangedHoverIndex, setJustChangedHoverIndex] = useState(-1);
-  const [mouseDelta, setMouseDelta] = useState(0);
-  const mouseDownVerticalPosition = useRef(0);
+  const [mouseDelta, setMouseDelta] = useState([0, 0]);
+  const mouseDownPosition = useRef([0, 0]);
   const ulRef = useRef<HTMLUListElement | null>(null);
   const liRef = useRef<HTMLLIElement | null>(null);
   // const itemHeight = 24 + 4; // calculated from liRef client top/bottom getBoundingClientRect (+ 4px margin)
@@ -44,7 +44,7 @@ export function ReorderableList() {
     hoveredIndex: number,
     justChangedIndex: number,
     availableIndex: number,
-    mouseDelta: number,
+    mouseDelta: [number, number],
     itemWidth: number
   ) => {
     const theIndex =
@@ -57,13 +57,15 @@ export function ReorderableList() {
     if (index === hoveredIndex) {
       style.transform = `scale(1.1)`;
       style.position = "relative";
-      style.left = `${mouseDelta}px`;
+      style.left = `${mouseDelta[0]}px`;
+      style.top = `${mouseDelta[1]}px`;
     } else if (index === justChangedIndex) {
       style.transform = `translateX(${justChangedMouseDelta}px) scale(1.1)`;
     } else if (index === movingIndex) {
       style.transform = `scale(1.1)`;
       style.position = "relative";
-      style.left = `${mouseDelta}px`;
+      style.left = `${mouseDelta[0]}px`;
+      style.top = `${mouseDelta[1]}px`;
     } else if (index >= availableIndex && index < theIndex) {
       style.transform = `translateX(${itemWidth}px)`;
     } else if (index <= availableIndex && index > theIndex) {
@@ -94,7 +96,7 @@ export function ReorderableList() {
                   // note: space-x-2 is 8px (see +8 below)
                   itemWidth.current = liRef.current.clientWidth + 8;
                   e.currentTarget.setPointerCapture(e.pointerId);
-                  mouseDownVerticalPosition.current = e.clientX;
+                  mouseDownPosition.current = [e.clientX, e.clientY];
                 }}
                 onPointerUp={(e) => {
                   // cancel move before animation ends and sets movingIndex
@@ -102,7 +104,7 @@ export function ReorderableList() {
                     setAvailableIndex(-1);
                     setJustChangedHoverIndex(-1);
                     e.currentTarget.releasePointerCapture(e.pointerId);
-                    setMouseDelta(0);
+                    setMouseDelta([0, 0]);
                     return;
                   }
                   const [extracted] = items.splice(movingIndex, 1);
@@ -110,18 +112,19 @@ export function ReorderableList() {
                   e.currentTarget.releasePointerCapture(e.pointerId);
                   setJustChangedIndex(availableIndex);
                   setJustChangedMouseDelta(
-                    mouseDelta +
+                    mouseDelta[0] +
                       (movingIndex - availableIndex) * itemWidth.current
                   );
                   setMovingIndex(-1);
                   setAvailableIndex(-1);
-                  setMouseDelta(0);
+                  setMouseDelta([0, 0]);
                 }}
                 onPointerMove={(e) => {
                   if (justChangedHoverIndex !== -1 || availableIndex !== -1) {
-                    setMouseDelta(
-                      e.clientX - mouseDownVerticalPosition.current
-                    );
+                    setMouseDelta([
+                      e.clientX - mouseDownPosition.current[0],
+                      e.clientY - mouseDownPosition.current[1],
+                    ]);
                   }
                   if (availableIndex === -1) {
                     return;
@@ -171,7 +174,7 @@ export function ReorderableList() {
                   justChangedHoverIndex,
                   justChangedIndex,
                   availableIndex,
-                  mouseDelta,
+                  mouseDelta as [number, number],
                   itemWidth.current
                 )}
               >
