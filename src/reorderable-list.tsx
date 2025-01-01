@@ -1,7 +1,7 @@
-import { useState, Fragment, useRef, useEffect } from "react";
+import { useState, Fragment, useRef, useEffect, useCallback } from "react";
 
 export function ReorderableList() {
-  const [items] = useState<string[]>([
+  const [items, setItems] = useState<string[]>([
     "Item 1",
     "Item 2",
     "Item 3",
@@ -10,6 +10,10 @@ export function ReorderableList() {
     "Item 6",
     "Item 7",
     "Item 8",
+    "Item 9",
+    "Item 10",
+    "Item 11",
+    "Item 12",
   ]);
   const [movingIndex, setMovingIndex] = useState(-1);
   const [availableIndex, setAvailableIndex] = useState(-1);
@@ -32,47 +36,131 @@ export function ReorderableList() {
 
   useEffect(() => {
     return () => {
-      if (liRef.current) {
-        liRef.current = null;
-      }
+      liRef.current = null;
     };
   }, []);
 
-  const getStyle = (
-    index: number,
-    movingIndex: number,
-    hoveredIndex: number,
-    justChangedIndex: number,
-    availableIndex: number,
-    mouseDelta: [number, number],
-    itemWidth: number
-  ) => {
-    const theIndex =
-      movingIndex !== -1
-        ? movingIndex
-        : justChangedHoverIndex !== -1
-        ? justChangedHoverIndex
-        : -1;
-    const style: React.CSSProperties = {};
-    if (index === hoveredIndex) {
-      style.transform = `scale(1.1)`;
-      style.position = "relative";
-      style.left = `${mouseDelta[0]}px`;
-      style.top = `${mouseDelta[1]}px`;
-    } else if (index === justChangedIndex) {
-      style.transform = `translateX(${justChangedMouseDelta}px) scale(1.1)`;
-    } else if (index === movingIndex) {
-      style.transform = `scale(1.1)`;
-      style.position = "relative";
-      style.left = `${mouseDelta[0]}px`;
-      style.top = `${mouseDelta[1]}px`;
-    } else if (index >= availableIndex && index < theIndex) {
-      style.transform = `translateX(${itemWidth}px)`;
-    } else if (index <= availableIndex && index > theIndex) {
-      style.transform = `translateX(${-itemWidth}px)`;
-    }
-    return style;
-  };
+  const getStyle = useCallback(
+    (
+      index: number,
+      movingIndex: number,
+      hoveredIndex: number,
+      justChangedIndex: number,
+      availableIndex: number,
+      mouseDelta: [number, number],
+      itemWidth: number
+    ) => {
+      const theIndex =
+        movingIndex !== -1
+          ? movingIndex
+          : justChangedHoverIndex !== -1
+          ? justChangedHoverIndex
+          : -1;
+      const style: React.CSSProperties = {};
+      if (index === hoveredIndex || index === movingIndex) {
+        style.transform = `scale(1.1)`;
+        style.position = "relative";
+        style.left = `${mouseDelta[0]}px`;
+        style.top = `${mouseDelta[1]}px`;
+      } else if (index === justChangedIndex) {
+        style.transform = `translateX(${justChangedMouseDelta}px) scale(1.1)`;
+      } else if (index >= availableIndex && index < theIndex) {
+        style.transform = `translateX(${itemWidth}px)`;
+      } else if (index <= availableIndex && index > theIndex) {
+        style.transform = `translateX(${-itemWidth}px)`;
+      }
+      return style;
+    },
+    [justChangedHoverIndex, justChangedMouseDelta]
+  );
+
+  const onPointerDown = useCallback(
+    (index: number, e: React.PointerEvent<HTMLLIElement>) => {
+      setAvailableIndex(index);
+      setJustChangedHoverIndex(index);
+      liRef.current = e.currentTarget;
+      // note: space-x-2 is 8px (see +8 below)
+      itemWidth.current = liRef.current.clientWidth + 8;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      mouseDownPosition.current = [e.clientX, e.clientY];
+    },
+    []
+  );
+
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent<HTMLLIElement>) => {
+      // cancel move before animation ends and sets movingIndex
+      if (movingIndex === -1) {
+        setAvailableIndex(-1);
+        setJustChangedHoverIndex(-1);
+        e.currentTarget.releasePointerCapture(e.pointerId);
+        setMouseDelta([0, 0]);
+        return;
+      }
+      e.currentTarget.releasePointerCapture(e.pointerId);
+      const newItems = [...items];
+      const [extracted] = newItems.splice(movingIndex, 1);
+      newItems.splice(availableIndex, 0, extracted);
+      setItems(newItems);
+      setJustChangedIndex(availableIndex);
+      setJustChangedMouseDelta(
+        mouseDelta[0] + (movingIndex - availableIndex) * itemWidth.current
+      );
+      setMovingIndex(-1);
+      setAvailableIndex(-1);
+      setMouseDelta([0, 0]);
+      liRef.current = null;
+    },
+    [availableIndex, items, mouseDelta, movingIndex]
+  );
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLLIElement>) => {
+      if (justChangedHoverIndex !== -1 || availableIndex !== -1) {
+        setMouseDelta([
+          e.clientX - mouseDownPosition.current[0],
+          e.clientY - mouseDownPosition.current[1],
+        ]);
+      }
+      if (availableIndex === -1) {
+        return;
+      }
+      const indexBefore = availableIndex - 1;
+      if (indexBefore >= 0) {
+        if (liRef.current) {
+          const left =
+            ulRef.current!.getBoundingClientRect().left +
+            indexBefore * itemWidth.current;
+          if (
+            liRef.current.getBoundingClientRect().left <
+            left + itemWidth.current / 2
+          ) {
+            setAvailableIndex(
+              (currentAvailableIndex) => currentAvailableIndex - 1
+            );
+          }
+        }
+      }
+
+      const indexAfter = availableIndex + 1;
+      if (indexAfter < items.length) {
+        if (liRef.current) {
+          const left =
+            ulRef.current!.getBoundingClientRect().left +
+            indexAfter * itemWidth.current;
+          if (
+            liRef.current.getBoundingClientRect().right >=
+            left + itemWidth.current / 2
+          ) {
+            setAvailableIndex(
+              (currentAvailableIndex) => currentAvailableIndex + 1
+            );
+          }
+        }
+      }
+    },
+    [availableIndex, items.length, justChangedHoverIndex]
+  );
 
   return (
     // outside list
@@ -90,79 +178,10 @@ export function ReorderableList() {
                   }
                 }}
                 onPointerDown={(e) => {
-                  setAvailableIndex(index);
-                  setJustChangedHoverIndex(index);
-                  liRef.current = e.currentTarget;
-                  // note: space-x-2 is 8px (see +8 below)
-                  itemWidth.current = liRef.current.clientWidth + 8;
-                  e.currentTarget.setPointerCapture(e.pointerId);
-                  mouseDownPosition.current = [e.clientX, e.clientY];
+                  onPointerDown(index, e);
                 }}
-                onPointerUp={(e) => {
-                  // cancel move before animation ends and sets movingIndex
-                  if (movingIndex === -1) {
-                    setAvailableIndex(-1);
-                    setJustChangedHoverIndex(-1);
-                    e.currentTarget.releasePointerCapture(e.pointerId);
-                    setMouseDelta([0, 0]);
-                    return;
-                  }
-                  const [extracted] = items.splice(movingIndex, 1);
-                  items.splice(availableIndex, 0, extracted);
-                  e.currentTarget.releasePointerCapture(e.pointerId);
-                  setJustChangedIndex(availableIndex);
-                  setJustChangedMouseDelta(
-                    mouseDelta[0] +
-                      (movingIndex - availableIndex) * itemWidth.current
-                  );
-                  setMovingIndex(-1);
-                  setAvailableIndex(-1);
-                  setMouseDelta([0, 0]);
-                }}
-                onPointerMove={(e) => {
-                  if (justChangedHoverIndex !== -1 || availableIndex !== -1) {
-                    setMouseDelta([
-                      e.clientX - mouseDownPosition.current[0],
-                      e.clientY - mouseDownPosition.current[1],
-                    ]);
-                  }
-                  if (availableIndex === -1) {
-                    return;
-                  }
-                  const indexBefore = availableIndex - 1;
-                  if (indexBefore >= 0) {
-                    if (liRef.current) {
-                      const left =
-                        ulRef.current!.getBoundingClientRect().left +
-                        indexBefore * itemWidth.current;
-                      if (
-                        liRef.current.getBoundingClientRect().left <
-                        left + itemWidth.current / 2
-                      ) {
-                        setAvailableIndex(
-                          (currentAvailableIndex) => currentAvailableIndex - 1
-                        );
-                      }
-                    }
-                  }
-
-                  const indexAfter = availableIndex + 1;
-                  if (indexAfter < items.length) {
-                    if (liRef.current) {
-                      const left =
-                        ulRef.current!.getBoundingClientRect().left +
-                        indexAfter * itemWidth.current;
-                      if (
-                        liRef.current.getBoundingClientRect().right >=
-                        left + itemWidth.current / 2
-                      ) {
-                        setAvailableIndex(
-                          (currentAvailableIndex) => currentAvailableIndex + 1
-                        );
-                      }
-                    }
-                  }
-                }}
+                onPointerUp={onPointerUp}
+                onPointerMove={onPointerMove}
                 className={`select-none bg-slate-500 rounded-lg my-1 min-w-24 text-center ${
                   index === movingIndex || index === justChangedIndex
                     ? "text-red-500 z-50"
