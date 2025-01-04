@@ -18,7 +18,7 @@ export function ReorderableList() {
   const [movingIndex, setMovingIndex] = useState(-1);
   const [availableIndex, setAvailableIndex] = useState(-1);
   const [justChangedIndex, setJustChangedIndex] = useState(-1);
-  const [justChangedMouseDelta, setJustChangedMouseDelta] = useState(0);
+  const [justChangedMouseDelta, setJustChangedMouseDelta] = useState([0, 0]);
   const [justChangedHoverIndex, setJustChangedHoverIndex] = useState(-1);
   const [mouseDelta, setMouseDelta] = useState([0, 0]);
   const mouseDownPosition = useRef([0, 0]);
@@ -30,7 +30,7 @@ export function ReorderableList() {
   useEffect(() => {
     if (justChangedIndex !== -1) {
       setJustChangedIndex(-1);
-      setJustChangedMouseDelta(0);
+      setJustChangedMouseDelta([0, 0]);
     }
   }, [justChangedIndex]);
 
@@ -63,7 +63,7 @@ export function ReorderableList() {
         style.left = `${mouseDelta[0]}px`;
         style.top = `${mouseDelta[1]}px`;
       } else if (index === justChangedIndex) {
-        style.transform = `translateX(${justChangedMouseDelta}px) scale(1.1)`;
+        style.transform = `translateX(${justChangedMouseDelta[0]}px) translateY(${justChangedMouseDelta[1]}px) scale(1.1)`;
       } else if (index >= availableIndex && index < theIndex) {
         style.transform = `translateX(${itemWidth}px)`;
       } else if (index <= availableIndex && index > theIndex) {
@@ -103,9 +103,10 @@ export function ReorderableList() {
       newItems.splice(availableIndex, 0, extracted);
       setItems(newItems);
       setJustChangedIndex(availableIndex);
-      setJustChangedMouseDelta(
-        mouseDelta[0] + (movingIndex - availableIndex) * itemWidth.current
-      );
+      setJustChangedMouseDelta([
+        mouseDelta[0] + (movingIndex - availableIndex) * itemWidth.current,
+        mouseDelta[1],
+      ]);
       setMovingIndex(-1);
       setAvailableIndex(-1);
       setMouseDelta([0, 0]);
@@ -164,13 +165,14 @@ export function ReorderableList() {
 
   return (
     // outside list
-    <div className="flex flex-col max-w-md">
-      <ul ref={ulRef} className="flex flex-wrap gap-x-2 max-w-md">
+    // max-w-md
+    <div className="flex flex-col">
+      <ul ref={ulRef} className="flex flex-wrap gap-x-2">
         {items.map((item, index) => {
           return (
-            <Fragment key={index}>
+            <Fragment key={`${index}-${item}`}>
               <li
-                key={item}
+                key={`${index}-${item}`}
                 onTransitionEnd={() => {
                   if (index === justChangedHoverIndex) {
                     setMovingIndex(index);
