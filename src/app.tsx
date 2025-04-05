@@ -2,15 +2,21 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ReorderableList } from "./reorderable-list";
 import { Link } from "react-router";
+import { useEffectEvent } from "use-effect-event";
 
 export const App = () => {
   const [count, setCount] = useState(0);
   const [name, setName] = useState("John");
   const [combined, setCombined] = useState("");
 
+  const combine = useEffectEvent((n: string) => {
+    setCombined(n + " " + count);
+  });
+  
   useEffect(() => {
-    setCombined(name + " " + count);
-  }, [name, count]);
+    console.log("name changed!");
+    combine(name);
+  }, [name]);
 
   const onClick = useCallback(() => {
     setCount((count) => count + 1);
