@@ -3,18 +3,18 @@ import { useState, useRef, useEffect, useCallback, memo } from "react";
 // helper function to get unscaled rect
 const getUnscaledRect = (element: HTMLElement, scale: number) => {
   const rect = element.getBoundingClientRect();
-  
+
   const centerX = rect.left + rect.width / 2;
   const centerY = rect.top + rect.height / 2;
-  
+
   const unscaledWidth = rect.width / scale;
   const unscaledHeight = rect.height / scale;
-  
+
   const unscaledLeft = centerX - unscaledWidth / 2;
   const unscaledRight = centerX + unscaledWidth / 2;
   const unscaledTop = centerY - unscaledHeight / 2;
   const unscaledBottom = centerY + unscaledHeight / 2;
-  
+
   return {
     left: unscaledLeft,
     right: unscaledRight,
@@ -43,6 +43,7 @@ export const ReorderableList = memo(function ReorderableList() {
   const ulRef = useRef<HTMLUListElement | null>(null);
   const liRef = useRef<HTMLLIElement | null>(null);
   const itemWidth = useRef(0);
+  const itemHeight = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -55,7 +56,8 @@ export const ReorderableList = memo(function ReorderableList() {
       index: number,
       movingIndex: number,
       availableIndex: number,
-      itemWidth: number
+      itemWidth: number,
+      itemHeight: number
     ) => {
       const style: React.CSSProperties = {};
       if (index === movingIndex) {
@@ -88,6 +90,7 @@ export const ReorderableList = memo(function ReorderableList() {
       liRef.current = e.currentTarget;
       // note: space-x-2 is 8px (see +8 below)
       itemWidth.current = liRef.current.clientWidth + 8;
+      itemHeight.current = liRef.current.clientHeight + 8;
       e.currentTarget.setPointerCapture(e.pointerId);
       mouseDownPosition.current = [e.clientX, e.clientY];
     },
@@ -124,12 +127,18 @@ export const ReorderableList = memo(function ReorderableList() {
         e.clientX - mouseDownPosition.current[0],
         e.clientY - mouseDownPosition.current[1],
       ]);
+      // calculate row
+      const columns = 4;
+      const availableRow = Math.floor(availableIndex / columns);
+      console.log("row index", availableRow);
+
       if (liRef.current) {
         const indexBefore = availableIndex - 1;
-        if (indexBefore >= 0) {
+        const indexBeforeRow = Math.floor(indexBefore / columns);
+        if (indexBefore >= 0 && indexBeforeRow === availableRow) {
           const left =
             ulRef.current!.getBoundingClientRect().left +
-            indexBefore * itemWidth.current;
+            (indexBefore % columns) * itemWidth.current;
           if (
             // needed to compensate for scale(1.1)
             getUnscaledRect(liRef.current, 1.1).left <
@@ -141,10 +150,11 @@ export const ReorderableList = memo(function ReorderableList() {
           }
         }
         const indexAfter = availableIndex + 1;
-        if (indexAfter < items.length) {
+        const indexAfterRow = Math.floor(indexAfter / columns);
+        if (indexAfter < items.length && indexAfterRow === availableRow) {
           const left =
             ulRef.current!.getBoundingClientRect().left +
-            indexAfter * itemWidth.current;
+            (indexAfter % columns) * itemWidth.current;
           if (
             // needed to compensate for scale(1.1)
             getUnscaledRect(liRef.current, 1.1).right >=
@@ -161,7 +171,8 @@ export const ReorderableList = memo(function ReorderableList() {
   );
 
   return (
-    <div className="flex flex-col">
+    // max-w-md
+    <div className="flex flex-col max-w-md">
       <ul ref={ulRef} className="flex flex-wrap gap-x-2">
         {items.map((item, index) => {
           return (
@@ -177,7 +188,8 @@ export const ReorderableList = memo(function ReorderableList() {
                 index,
                 movingIndex,
                 availableIndex,
-                itemWidth.current
+                itemWidth.current,
+                itemHeight.current
               )}
             >
               {item}
