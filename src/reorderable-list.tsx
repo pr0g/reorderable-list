@@ -35,6 +35,14 @@ export const ReorderableList = memo(function ReorderableList() {
     "Item 6",
     "Item 7",
     "Item 8",
+    "Item 9",
+    "Item 10",
+    "Item 11",
+    "Item 12",
+    "Item 13",
+    "Item 14",
+    "Item 15",
+    "Item 16",
   ]);
   const [movingIndex, setMovingIndex] = useState(-1);
   const [availableIndex, setAvailableIndex] = useState(-1);
@@ -70,7 +78,7 @@ export const ReorderableList = memo(function ReorderableList() {
         index < movingIndex &&
         movingIndex !== -1
       ) {
-        if (index === /*columns - 1*/ 3) {
+        if (index % 4 === /*columns - 1*/ 3) {
           style.transform = `translateX(${
             -itemWidth * /*columns - 1*/ 3
           }px) translateY(${itemHeight}px)`;
@@ -82,7 +90,7 @@ export const ReorderableList = memo(function ReorderableList() {
         index > movingIndex &&
         movingIndex !== -1
       ) {
-        if (index === /*columns*/ 4) {
+        if ((index % 4) + 4 === /*columns*/ 4) {
           style.transform = `translateX(${
             itemWidth * /*columns - 1*/ 3
           }px) translateY(${-itemHeight}px)`;
