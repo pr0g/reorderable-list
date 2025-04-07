@@ -44,6 +44,9 @@ export const ReorderableList = memo(function ReorderableList() {
     "Item 15",
     "Item 16",
   ]);
+
+  const columns = 3;
+
   const [movingIndex, setMovingIndex] = useState(-1);
   const [availableIndex, setAvailableIndex] = useState(-1);
   const [mouseDelta, setMouseDelta] = useState([0, 0]);
@@ -52,12 +55,6 @@ export const ReorderableList = memo(function ReorderableList() {
   const liRef = useRef<HTMLLIElement | null>(null);
   const itemWidth = useRef(0);
   const itemHeight = useRef(0);
-
-  useEffect(() => {
-    return () => {
-      liRef.current = null;
-    };
-  }, []);
 
   const getStyle = useCallback(
     (
@@ -78,11 +75,13 @@ export const ReorderableList = memo(function ReorderableList() {
         index < movingIndex &&
         movingIndex !== -1
       ) {
-        if (index % 4 === /*columns - 1*/ 3) {
+        if (index % columns === columns - 1) {
+          // handle wrapping down to the bottom left
           style.transform = `translateX(${
-            -itemWidth * /*columns - 1*/ 3
+            -itemWidth * (columns - 1)
           }px) translateY(${itemHeight}px)`;
         } else {
+          // push items forward
           style.transform = `translateX(${itemWidth}px)`;
         }
       } else if (
@@ -90,11 +89,13 @@ export const ReorderableList = memo(function ReorderableList() {
         index > movingIndex &&
         movingIndex !== -1
       ) {
-        if ((index % 4) + 4 === /*columns*/ 4) {
+        if (index % columns === 0) {
+          // handle wrapping up and to the top right
           style.transform = `translateX(${
-            itemWidth * /*columns - 1*/ 3
+            itemWidth * (columns - 1)
           }px) translateY(${-itemHeight}px)`;
         } else {
+          // push items back
           style.transform = `translateX(${-itemWidth}px)`;
         }
       }
@@ -147,8 +148,7 @@ export const ReorderableList = memo(function ReorderableList() {
         e.clientX - mouseDownPosition.current[0],
         e.clientY - mouseDownPosition.current[1],
       ]);
-      // calculate row
-      const columns = 4;
+
       const rows = Math.ceil(items.length / columns);
       const availableRow = Math.floor(availableIndex / columns);
 
@@ -165,7 +165,6 @@ export const ReorderableList = memo(function ReorderableList() {
             getUnscaledRect(liRef.current, 1.1).left <
             left + itemWidth.current / 2
           ) {
-            console.log("set prev col");
             setAvailableIndex(
               (currentAvailableIndex) => currentAvailableIndex - 1
             );
@@ -184,7 +183,6 @@ export const ReorderableList = memo(function ReorderableList() {
             getUnscaledRect(liRef.current, 1.1).right >=
             left + itemWidth.current / 2
           ) {
-            console.log("set next col");
             setAvailableIndex(
               (currentAvailableIndex) => currentAvailableIndex + 1
             );
@@ -226,9 +224,15 @@ export const ReorderableList = memo(function ReorderableList() {
   );
 
   return (
-    // max-w-md
-    <div className="flex flex-col max-w-md">
-      <ul ref={ulRef} className="flex flex-wrap gap-x-2">
+    <div>
+      <ul
+        ref={ulRef}
+        className={`gap-x-2`}
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+        }}
+      >
         {items.map((item, index) => {
           return (
             <li
