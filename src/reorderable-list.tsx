@@ -129,10 +129,11 @@ export const ReorderableList = memo(function ReorderableList() {
       ]);
       // calculate row
       const columns = 4;
+      const rows = Math.ceil(items.length / columns);
       const availableRow = Math.floor(availableIndex / columns);
-      console.log("row index", availableRow);
 
       if (liRef.current) {
+        // drag left
         const indexBefore = availableIndex - 1;
         const indexBeforeRow = Math.floor(indexBefore / columns);
         if (indexBefore >= 0 && indexBeforeRow === availableRow) {
@@ -144,11 +145,14 @@ export const ReorderableList = memo(function ReorderableList() {
             getUnscaledRect(liRef.current, 1.1).left <
             left + itemWidth.current / 2
           ) {
+            console.log("set prev col");
             setAvailableIndex(
               (currentAvailableIndex) => currentAvailableIndex - 1
             );
           }
         }
+
+        // drag right
         const indexAfter = availableIndex + 1;
         const indexAfterRow = Math.floor(indexAfter / columns);
         if (indexAfter < items.length && indexAfterRow === availableRow) {
@@ -160,8 +164,39 @@ export const ReorderableList = memo(function ReorderableList() {
             getUnscaledRect(liRef.current, 1.1).right >=
             left + itemWidth.current / 2
           ) {
+            console.log("set next col");
             setAvailableIndex(
               (currentAvailableIndex) => currentAvailableIndex + 1
+            );
+          }
+        }
+
+        const nextRow = Math.floor((availableIndex + columns) / columns);
+        if (nextRow < rows) {
+          const top =
+            ulRef.current!.getBoundingClientRect().top +
+            nextRow * itemHeight.current;
+          if (
+            getUnscaledRect(liRef.current, 1.1).bottom >=
+            top + itemHeight.current / 2
+          ) {
+            setAvailableIndex(
+              (currentAvailableIndex) => currentAvailableIndex + columns
+            );
+          }
+        }
+
+        const prevRow = Math.floor((availableIndex - columns) / columns);
+        if (prevRow >= 0) {
+          const top =
+            ulRef.current!.getBoundingClientRect().top +
+            prevRow * itemHeight.current;
+          if (
+            getUnscaledRect(liRef.current, 1.1).top <
+            top + itemHeight.current / 2
+          ) {
+            setAvailableIndex(
+              (currentAvailableIndex) => currentAvailableIndex - columns
             );
           }
         }
