@@ -60,6 +60,7 @@ export function ReorderableList() {
       style.transform = `scale(1.1)`;
       style.position = "relative";
       style.top = `${mouseDelta}px`;
+      style.zIndex = 50;
     } else if (index >= availableIndex && index < theIndex) {
       style.transform = `translateY(${itemHeight}px)`;
     } else if (index <= availableIndex && index > theIndex) {
