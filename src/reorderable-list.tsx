@@ -70,7 +70,7 @@ export const ReorderableList = memo(function ReorderableList() {
         index < movingIndex &&
         movingIndex !== -1
       ) {
-        if (index === /*columns*/ 4) {
+        if (index === /*columns - 1*/ 3) {
           style.transform = `translateX(${
             -itemWidth * /*columns - 1*/ 3
           }px) translateY(${itemHeight}px)`;
