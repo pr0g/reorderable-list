@@ -70,13 +70,25 @@ export const ReorderableList = memo(function ReorderableList() {
         index < movingIndex &&
         movingIndex !== -1
       ) {
-        style.transform = `translateX(${itemWidth}px)`;
+        if (index === /*columns*/ 4) {
+          style.transform = `translateX(${
+            -itemWidth * /*columns - 1*/ 3
+          }px) translateY(${itemHeight}px)`;
+        } else {
+          style.transform = `translateX(${itemWidth}px)`;
+        }
       } else if (
         index <= availableIndex &&
         index > movingIndex &&
         movingIndex !== -1
       ) {
-        style.transform = `translateX(${-itemWidth}px)`;
+        if (index === /*columns*/ 4) {
+          style.transform = `translateX(${
+            itemWidth * /*columns - 1*/ 3
+          }px) translateY(${-itemHeight}px)`;
+        } else {
+          style.transform = `translateX(${-itemWidth}px)`;
+        }
       }
       return style;
     },
