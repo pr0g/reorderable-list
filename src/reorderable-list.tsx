@@ -138,7 +138,7 @@ export const ReorderableList = memo(function ReorderableList() {
       setJustReleasedMouseDelta([0, 0]);
       setMouseDelta([0, 0]);
       liRef.current = e.currentTarget;
-      // note: space-x-2 is 8px (see +8 below)
+      // note: m-1 is 8px (see +8 below)
       itemWidth.current = liRef.current.clientWidth + 8;
       itemHeight.current = liRef.current.clientHeight + 8;
       e.currentTarget.setPointerCapture(e.pointerId);
