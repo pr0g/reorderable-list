@@ -49,25 +49,22 @@ export const ReorderableList = memo(function ReorderableList() {
 
   const [movingIndex, setMovingIndex] = useState(-1);
   const [availableIndex, setAvailableIndex] = useState(-1);
-
   const [justReleasedIndex, setJustReleasedIndex] = useState(-1);
   const [justReleasedMouseDelta, setJustReleasedMouseDelta] = useState([0, 0]);
   const [justPressedIndex, setJustPressedIndex] = useState(-1);
+  const [mouseDelta, setMouseDelta] = useState([0, 0]);
+
+  const ulRef = useRef<HTMLUListElement | null>(null);
+  const liRef = useRef<HTMLLIElement | null>(null);
+  const mouseDownPosition = useRef([0, 0]);
+  const itemWidth = useRef(0);
+  const itemHeight = useRef(0);
 
   useEffect(() => {
     if (justReleasedIndex !== -1) {
       setJustReleasedIndex(-1);
     }
   }, [justReleasedIndex]);
-
-  const mouseDownPosition = useRef([0, 0]);
-  const [mouseDelta, setMouseDelta] = useState([0, 0]);
-
-  const ulRef = useRef<HTMLUListElement | null>(null);
-  const liRef = useRef<HTMLLIElement | null>(null);
-
-  const itemWidth = useRef(0);
-  const itemHeight = useRef(0);
 
   const getStyle = useCallback(
     (
