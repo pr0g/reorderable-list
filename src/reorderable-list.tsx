@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, memo } from "react";
+import { useState, useRef, useCallback, useEffect, memo } from "react";
 
 // helper function to get unscaled rect
 const getUnscaledRect = (element: HTMLElement, scale: number) => {
@@ -49,10 +49,23 @@ export const ReorderableList = memo(function ReorderableList() {
 
   const [movingIndex, setMovingIndex] = useState(-1);
   const [availableIndex, setAvailableIndex] = useState(-1);
-  const [mouseDelta, setMouseDelta] = useState([0, 0]);
+
+  const [justReleasedIndex, setJustReleasedIndex] = useState(-1);
+  const [justReleasedMouseDelta, setJustReleasedMouseDelta] = useState([0, 0]);
+  const [justPressedIndex, setJustPressedIndex] = useState(-1);
+
+  useEffect(() => {
+    if (justReleasedIndex !== -1) {
+      setJustReleasedIndex(-1);
+    }
+  }, [justReleasedIndex]);
+
   const mouseDownPosition = useRef([0, 0]);
+  const [mouseDelta, setMouseDelta] = useState([0, 0]);
+
   const ulRef = useRef<HTMLUListElement | null>(null);
   const liRef = useRef<HTMLLIElement | null>(null);
+
   const itemWidth = useRef(0);
   const itemHeight = useRef(0);
 
@@ -60,16 +73,20 @@ export const ReorderableList = memo(function ReorderableList() {
     (
       index: number,
       movingIndex: number,
+      pressedIndex: number,
+      releasedIndex: number,
       availableIndex: number,
       itemWidth: number,
       itemHeight: number
     ) => {
       const style: React.CSSProperties = {};
-      if (index === movingIndex) {
+      if (index === pressedIndex || index === movingIndex) {
         style.transform = `scale(1.1)`;
         style.position = "relative";
         style.left = `${mouseDelta[0]}px`;
         style.top = `${mouseDelta[1]}px`;
+      } else if (index === releasedIndex) {
+        style.transform = `translateX(${justReleasedMouseDelta[0]}px) translateY(${justReleasedMouseDelta[1]}px) scale(1.1)`;
       } else if (
         index >= availableIndex &&
         index < movingIndex &&
@@ -101,13 +118,25 @@ export const ReorderableList = memo(function ReorderableList() {
       }
       return style;
     },
-    [mouseDelta]
+    [mouseDelta, justReleasedMouseDelta]
+  );
+
+  const onTransitionEnd = useCallback(
+    (index: number) => () => {
+      if (index === justPressedIndex) {
+        setMovingIndex(index);
+        setJustPressedIndex(-1);
+      }
+    },
+    [justPressedIndex]
   );
 
   const onPointerDown = useCallback(
     (index: number) => (e: React.PointerEvent<HTMLLIElement>) => {
       setAvailableIndex(index);
-      setMovingIndex(index);
+      setJustPressedIndex(index);
+      setJustReleasedMouseDelta([0, 0]);
+      setMouseDelta([0, 0]);
       liRef.current = e.currentTarget;
       // note: space-x-2 is 8px (see +8 below)
       itemWidth.current = liRef.current.clientWidth + 8;
@@ -121,33 +150,47 @@ export const ReorderableList = memo(function ReorderableList() {
   const onPointerUp = useCallback(
     (e: React.PointerEvent<HTMLLIElement>) => {
       liRef.current = null;
+      e.currentTarget.releasePointerCapture(e.pointerId);
       if (movingIndex === -1) {
         setAvailableIndex(-1);
-        e.currentTarget.releasePointerCapture(e.pointerId);
+        setJustPressedIndex(-1);
         setMouseDelta([0, 0]);
         return;
       }
-      e.currentTarget.releasePointerCapture(e.pointerId);
+
       const newItems = [...items];
       const [extracted] = newItems.splice(movingIndex, 1);
       newItems.splice(availableIndex, 0, extracted);
       setItems(newItems);
+
+      const colm = movingIndex % columns;
+      const rowm = Math.floor(movingIndex / columns);
+      const cola = availableIndex % columns;
+      const rowa = Math.floor(availableIndex / columns);
+      setJustReleasedMouseDelta([
+        mouseDelta[0] + (colm - cola) * itemWidth.current,
+        mouseDelta[1] + (rowm - rowa) * itemHeight.current,
+      ]);
+      setJustReleasedIndex(availableIndex);
       setMovingIndex(-1);
       setAvailableIndex(-1);
       setMouseDelta([0, 0]);
     },
-    [availableIndex, items, movingIndex]
+    [availableIndex, items, mouseDelta, movingIndex]
   );
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLLIElement>) => {
+      if (justPressedIndex !== -1 || availableIndex !== -1) {
+        setMouseDelta([
+          e.clientX - mouseDownPosition.current[0],
+          e.clientY - mouseDownPosition.current[1],
+        ]);
+      }
+
       if (availableIndex === -1) {
         return;
       }
-      setMouseDelta([
-        e.clientX - mouseDownPosition.current[0],
-        e.clientY - mouseDownPosition.current[1],
-      ]);
 
       const rows = Math.ceil(items.length / columns);
       const availableRow = Math.floor(availableIndex / columns);
@@ -220,7 +263,7 @@ export const ReorderableList = memo(function ReorderableList() {
         }
       }
     },
-    [availableIndex, items.length]
+    [availableIndex, items.length, justPressedIndex]
   );
 
   return (
@@ -237,15 +280,20 @@ export const ReorderableList = memo(function ReorderableList() {
           return (
             <li
               key={item}
+              onTransitionEnd={onTransitionEnd(index)}
               onPointerDown={onPointerDown(index)}
               onPointerUp={onPointerUp}
               onPointerMove={onPointerMove}
               className={`select-none bg-slate-500 rounded-lg my-1 min-w-24 text-center ${
-                index === movingIndex ? "text-red-500 z-50" : "text-black"
+                index === movingIndex || index === justReleasedIndex
+                  ? "text-red-500 z-50"
+                  : "text-black transition-transform duration-300"
               }`}
               style={getStyle(
                 index,
                 movingIndex,
+                justPressedIndex,
+                justReleasedIndex,
                 availableIndex,
                 itemWidth.current,
                 itemHeight.current
