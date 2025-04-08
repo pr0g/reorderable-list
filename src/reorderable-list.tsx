@@ -115,6 +115,11 @@ export const ReorderableList = memo(function ReorderableList() {
           // push items back
           style.transform = `translateX(${-itemWidth}px)`;
         }
+      } else if (
+        releasedIndex !== -1 &&
+        (index <= releasedIndex || index >= releasedIndex)
+      ) {
+        style.transition = "none";
       }
       return style;
     },
