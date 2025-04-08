@@ -60,7 +60,6 @@ export function ReorderableList() {
       style.transform = `scale(1.1)`;
       style.position = "relative";
       style.top = `${mouseDelta}px`;
-      style.zIndex = 50;
     } else if (index >= availableIndex && index < theIndex) {
       style.transform = `translateY(${itemHeight}px)`;
     } else if (index <= availableIndex && index > theIndex) {
@@ -156,7 +155,7 @@ export function ReorderableList() {
                 }}
                 className={`select-none bg-slate-500 rounded-lg my-1 ${
                   index === movingIndex || index === justChangedIndex
-                    ? "text-red-500"
+                    ? "text-red-500 z-50"
                     : "text-black transition-transform duration-300"
                 }`}
                 style={getStyle(
