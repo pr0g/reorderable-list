@@ -86,6 +86,7 @@ export const ReorderableList = memo(function ReorderableList() {
         style.left = `${mouseDelta[0]}px`;
         style.top = `${mouseDelta[1]}px`;
       } else if (index === releasedIndex) {
+        console.log("just released style");
         style.transform = `translateX(${justReleasedMouseDelta[0]}px) translateY(${justReleasedMouseDelta[1]}px) scale(1.1)`;
       } else if (
         index >= availableIndex &&
@@ -149,9 +150,23 @@ export const ReorderableList = memo(function ReorderableList() {
 
   const onPointerUp = useCallback(
     (e: React.PointerEvent<HTMLLIElement>) => {
+      const colm = movingIndex % columns;
+      const rowm = Math.floor(movingIndex / columns);
+      const cola = availableIndex % columns;
+      const rowa = Math.floor(availableIndex / columns);
+
+      const deltaX = mouseDelta[0]; // + (colm - cola) * itemWidth.current;
+      const deltaY = mouseDelta[1]; // + (rowm - rowa) * itemHeight.current;
+
+      console.log(deltaX);
+      console.log(deltaY);
+
       liRef.current = null;
       e.currentTarget.releasePointerCapture(e.pointerId);
       if (movingIndex === -1) {
+        console.log("pointer up early");
+        setJustReleasedIndex(availableIndex);
+        setJustReleasedMouseDelta([deltaX, deltaY]);
         setAvailableIndex(-1);
         setJustPressedIndex(-1);
         setMouseDelta([0, 0]);
@@ -163,13 +178,9 @@ export const ReorderableList = memo(function ReorderableList() {
       newItems.splice(availableIndex, 0, extracted);
       setItems(newItems);
 
-      const colm = movingIndex % columns;
-      const rowm = Math.floor(movingIndex / columns);
-      const cola = availableIndex % columns;
-      const rowa = Math.floor(availableIndex / columns);
       setJustReleasedMouseDelta([
-        mouseDelta[0] + (colm - cola) * itemWidth.current,
-        mouseDelta[1] + (rowm - rowa) * itemHeight.current,
+        deltaX + (colm - cola) * itemWidth.current,
+        deltaY + (rowm - rowa) * itemHeight.current,
       ]);
       setJustReleasedIndex(availableIndex);
       setMovingIndex(-1);
@@ -270,7 +281,7 @@ export const ReorderableList = memo(function ReorderableList() {
     <div>
       <ul
         ref={ulRef}
-        className={`gap-x-2`}
+        className="gap-x-2"
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
