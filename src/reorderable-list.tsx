@@ -160,7 +160,7 @@ export const ReorderableList = memo(function ReorderableList() {
       liRef.current = null;
       e.currentTarget.releasePointerCapture(e.pointerId);
       if (movingIndex === -1) {
-        setJustReleasedIndex(availableIndex);
+        setJustReleasedIndex(justPressedIndex);
         setJustReleasedMouseDelta([deltaX, deltaY]);
         setAvailableIndex(-1);
         setJustPressedIndex(-1);
@@ -186,7 +186,7 @@ export const ReorderableList = memo(function ReorderableList() {
       setAvailableIndex(-1);
       setMouseDelta([0, 0]);
     },
-    [availableIndex, items, mouseDelta, movingIndex]
+    [availableIndex, items, justPressedIndex, mouseDelta, movingIndex]
   );
 
   const onPointerMove = useCallback(
