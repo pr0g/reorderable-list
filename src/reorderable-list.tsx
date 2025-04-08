@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, memo } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
 
 // helper function to get unscaled rect
 const getUnscaledRect = (element: HTMLElement, scale: number) => {
@@ -276,15 +276,17 @@ export const ReorderableList = memo(function ReorderableList() {
     [availableIndex, items.length, justPressedIndex]
   );
 
+  const gridStyle = useMemo(
+    () => ({
+      display: "grid",
+      gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+    }),
+    [columns]
+  );
+
   return (
     <div>
-      <ul
-        ref={ulRef}
-        style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-        }}
-      >
+      <ul ref={ulRef} style={gridStyle}>
         {items.map((item, index) => {
           return (
             <li
