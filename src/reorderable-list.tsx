@@ -46,7 +46,6 @@ type State = {
   movingIndex: number;
   availableIndex: number;
   justReleasedIndex: number;
-  justReleasedMouseDelta: [number, number];
   justPressedIndex: number;
   mouseDelta: [number, number];
 };
@@ -69,26 +68,23 @@ function reducer(state: State, action: Action): State {
         ...state,
         availableIndex: action.index,
         justPressedIndex: action.index,
-        justReleasedMouseDelta: [0, 0],
         mouseDelta: [0, 0],
       };
     case "POINTER_UP_EARLY":
       return {
         ...state,
         justReleasedIndex: state.justPressedIndex,
-        justReleasedMouseDelta: action.delta,
+        mouseDelta: action.delta,
         availableIndex: -1,
         justPressedIndex: -1,
-        mouseDelta: [0, 0],
       };
     case "POINTER_UP":
       return {
         ...state,
-        justReleasedMouseDelta: action.delta,
+        mouseDelta: action.delta,
         justReleasedIndex: state.availableIndex,
         movingIndex: -1,
         availableIndex: -1,
-        mouseDelta: [0, 0],
       };
     case "POINTER_MOVE":
       return {
@@ -133,7 +129,6 @@ export const ReorderableList = memo(function ReorderableList() {
     availableIndex: -1,
     justReleasedIndex: -1,
     justPressedIndex: -1,
-    justReleasedMouseDelta: [0, 0],
     mouseDelta: [0, 0],
   };
 
@@ -168,7 +163,7 @@ export const ReorderableList = memo(function ReorderableList() {
         style.left = `${state.mouseDelta[0]}px`;
         style.top = `${state.mouseDelta[1]}px`;
       } else if (index === releasedIndex) {
-        style.transform = `translateX(${state.justReleasedMouseDelta[0]}px) translateY(${state.justReleasedMouseDelta[1]}px) scale(1.1)`;
+        style.transform = `translateX(${state.mouseDelta[0]}px) translateY(${state.mouseDelta[1]}px) scale(1.1)`;
       } else if (
         index >= availableIndex &&
         index < movingIndex &&
@@ -205,7 +200,7 @@ export const ReorderableList = memo(function ReorderableList() {
       }
       return style;
     },
-    [state.mouseDelta, state.justReleasedMouseDelta]
+    [state.mouseDelta]
   );
 
   const onTransitionEnd = useCallback(
