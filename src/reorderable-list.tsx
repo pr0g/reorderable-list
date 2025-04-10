@@ -40,7 +40,7 @@ type Action =
   | { type: "POINTER_UP_EARLY"; delta: [number, number] }
   | { type: "POINTER_UP"; delta: [number, number] }
   | { type: "POINTER_MOVE"; delta: [number, number] }
-  | { type: "CHANGE_INDEX"; indexChange: number };
+  | { type: "CHANGE_INDEX"; indexChange: number; max: number };
 
 type State = {
   movingIndex: number;
@@ -94,7 +94,10 @@ function reducer(state: State, action: Action): State {
     case "CHANGE_INDEX": {
       return {
         ...state,
-        availableIndex: state.availableIndex + action.indexChange,
+        availableIndex: Math.min(
+          state.availableIndex + action.indexChange,
+          action.max
+        ),
       };
     }
     default:
@@ -290,7 +293,11 @@ export const ReorderableList = memo(function ReorderableList() {
             getUnscaledRect(liRef.current, 1.1).left <
             left + itemWidth.current / 2
           ) {
-            dispatch({ type: "CHANGE_INDEX", indexChange: -1 });
+            dispatch({
+              type: "CHANGE_INDEX",
+              indexChange: -1,
+              max: items.length - 1,
+            });
           }
         }
 
@@ -306,7 +313,11 @@ export const ReorderableList = memo(function ReorderableList() {
             getUnscaledRect(liRef.current, 1.1).right >=
             left + itemWidth.current / 2
           ) {
-            dispatch({ type: "CHANGE_INDEX", indexChange: 1 });
+            dispatch({
+              type: "CHANGE_INDEX",
+              indexChange: 1,
+              max: items.length - 1,
+            });
           }
         }
 
@@ -319,7 +330,11 @@ export const ReorderableList = memo(function ReorderableList() {
             getUnscaledRect(liRef.current, 1.1).bottom >=
             top + itemHeight.current / 2
           ) {
-            dispatch({ type: "CHANGE_INDEX", indexChange: columns });
+            dispatch({
+              type: "CHANGE_INDEX",
+              indexChange: columns,
+              max: items.length - 1,
+            });
           }
         }
 
@@ -332,7 +347,11 @@ export const ReorderableList = memo(function ReorderableList() {
             getUnscaledRect(liRef.current, 1.1).top <
             top + itemHeight.current / 2
           ) {
-            dispatch({ type: "CHANGE_INDEX", indexChange: -columns });
+            dispatch({
+              type: "CHANGE_INDEX",
+              indexChange: -columns,
+              max: items.length - 1,
+            });
           }
         }
       }
