@@ -35,7 +35,8 @@ const getUnscaledRect = (element: HTMLElement, scale: number) => {
 
 type Action =
   | { type: "JUST_RELEASED" }
-  | { type: "TRANSITION_ENDED"; index: number }
+  | { type: "TRANSITION_IN_ENDED"; index: number }
+  | { type: "TRANSITION_OUT_ENDED"; index: number }
   | { type: "POINTER_DOWN"; index: number }
   | { type: "POINTER_UP_EARLY"; delta: [number, number] }
   | { type: "POINTER_UP"; delta: [number, number] }
@@ -47,7 +48,9 @@ type State = {
   availableIndex: number;
   justReleasedIndex: number;
   justPressedIndex: number;
+  nextIndex: number;
   mouseDelta: [number, number];
+  mousePressed: boolean;
 };
 
 function reducer(state: State, action: Action): State {
@@ -56,19 +59,31 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         justReleasedIndex: -1,
+        nextIndex: state.movingIndex,
+        // movingIndex: -1,
+        // availableIndex: -1,
       };
-    case "TRANSITION_ENDED":
+    case "TRANSITION_IN_ENDED":
       return {
         ...state,
         movingIndex: action.index,
         justPressedIndex: -1,
       };
+    case "TRANSITION_OUT_ENDED": {
+      return {
+        ...state,
+        availableIndex: -1,
+        movingIndex: -1,
+        nextIndex: -1,
+      };
+    }
     case "POINTER_DOWN":
       return {
         ...state,
         availableIndex: action.index,
         justPressedIndex: action.index,
         mouseDelta: [0, 0],
+        mousePressed: true,
       };
     case "POINTER_UP_EARLY":
       return {
@@ -77,14 +92,16 @@ function reducer(state: State, action: Action): State {
         mouseDelta: action.delta,
         availableIndex: -1,
         justPressedIndex: -1,
+        mousePressed: false,
       };
     case "POINTER_UP":
       return {
         ...state,
-        mouseDelta: action.delta,
-        justReleasedIndex: state.availableIndex,
-        movingIndex: -1,
-        availableIndex: -1,
+        mousePressed: false,
+        justReleasedIndex: state.movingIndex,
+        // mouseDelta: action.delta,
+        // movingIndex: -1,
+        // availableIndex: -1,
       };
     case "POINTER_MOVE":
       return {
@@ -128,11 +145,13 @@ export const ReorderableList = memo(function ReorderableList() {
   const columns = 3;
 
   const initialState: State = {
-    movingIndex: -1,
-    availableIndex: -1,
-    justReleasedIndex: -1,
-    justPressedIndex: -1,
+    movingIndex: -1, // index of element while moving
+    availableIndex: -1, // index of slot to move moving element to
+    justReleasedIndex: -1, // index of just released element (will be 'available' index after move)
+    justPressedIndex: -1, // index of element pressed before becoming 'active' (moving)
+    nextIndex: -1,
     mouseDelta: [0, 0],
+    mousePressed: false,
   };
 
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -145,6 +164,7 @@ export const ReorderableList = memo(function ReorderableList() {
 
   useEffect(() => {
     if (state.justReleasedIndex !== -1) {
+      console.log("dispatch just released");
       dispatch({ type: "JUST_RELEASED" });
     }
   }, [state.justReleasedIndex]);
@@ -156,17 +176,33 @@ export const ReorderableList = memo(function ReorderableList() {
       pressedIndex: number,
       releasedIndex: number,
       availableIndex: number,
+      nextIndex: number,
       itemWidth: number,
       itemHeight: number
     ) => {
       const style: React.CSSProperties = {};
-      if (index === pressedIndex || index === movingIndex) {
+      if (index === releasedIndex) {
+        console.log("released index");
+        // record exactly where the element was when it was released (so it can animate back to position)
+        style.transform = `translateX(${state.mouseDelta[0]}px) translateY(${state.mouseDelta[1]}px) scale(1.1)`;
+      } else if (index === nextIndex) {
+        console.log("next index");
+        const rowFrom = Math.floor(nextIndex / columns);
+        const colFrom = Math.floor(nextIndex % columns);
+        const rowTo = Math.floor(availableIndex / columns);
+        const colTo = Math.floor(availableIndex % columns);
+        const row = rowTo - rowFrom;
+        const col = colTo - colFrom;
+        console.log(row, col);
+        style.transform = `translateX(${itemWidth * col}px) translateY(${
+          itemHeight * row
+        }px) scale(1)`;
+      } else if (index === pressedIndex || index === movingIndex) {
+        console.log("moving/pressed index");
         style.transform = `scale(1.1)`;
         style.position = "relative";
         style.left = `${state.mouseDelta[0]}px`;
         style.top = `${state.mouseDelta[1]}px`;
-      } else if (index === releasedIndex) {
-        style.transform = `translateX(${state.mouseDelta[0]}px) translateY(${state.mouseDelta[1]}px) scale(1.1)`;
       } else if (
         index >= availableIndex &&
         index < movingIndex &&
@@ -199,7 +235,8 @@ export const ReorderableList = memo(function ReorderableList() {
         releasedIndex !== -1 &&
         (index <= releasedIndex || index >= releasedIndex)
       ) {
-        style.transition = "none";
+        // style.transition = "none";
+        // style.transform = `translateX(0px)`;
       }
       return style;
     },
@@ -209,10 +246,23 @@ export const ReorderableList = memo(function ReorderableList() {
   const onTransitionEnd = useCallback(
     (index: number) => () => {
       if (index === state.justPressedIndex) {
-        dispatch({ type: "TRANSITION_ENDED", index });
+        dispatch({ type: "TRANSITION_IN_ENDED", index });
+      }
+      if (index === state.nextIndex) {
+        const newItems = [...items];
+        const [extracted] = newItems.splice(state.movingIndex, 1);
+        newItems.splice(state.availableIndex, 0, extracted);
+        setItems(newItems);
+        dispatch({ type: "TRANSITION_OUT_ENDED", index });
       }
     },
-    [state.justPressedIndex]
+    [
+      items,
+      state.availableIndex,
+      state.justPressedIndex,
+      state.movingIndex,
+      state.nextIndex,
+    ]
   );
 
   const onPointerDown = useCallback(
@@ -240,10 +290,10 @@ export const ReorderableList = memo(function ReorderableList() {
         return;
       }
 
-      const newItems = [...items];
-      const [extracted] = newItems.splice(state.movingIndex, 1);
-      newItems.splice(state.availableIndex, 0, extracted);
-      setItems(newItems);
+      // const newItems = [...items];
+      // const [extracted] = newItems.splice(state.movingIndex, 1);
+      // newItems.splice(state.availableIndex, 0, extracted);
+      // setItems(newItems);
 
       const colm = state.movingIndex % columns;
       const rowm = Math.floor(state.movingIndex / columns);
@@ -258,12 +308,13 @@ export const ReorderableList = memo(function ReorderableList() {
         ],
       });
     },
-    [items, state.availableIndex, state.mouseDelta, state.movingIndex]
+    [state.availableIndex, state.mouseDelta, state.movingIndex]
   );
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLLIElement>) => {
-      if (state.justPressedIndex !== -1 || state.availableIndex !== -1) {
+      // if (state.justPressedIndex !== -1 || state.availableIndex !== -1) {
+      if (state.mousePressed) {
         dispatch({
           type: "POINTER_MOVE",
           delta: [
@@ -356,7 +407,7 @@ export const ReorderableList = memo(function ReorderableList() {
         }
       }
     },
-    [state.availableIndex, items.length, state.justPressedIndex]
+    [state.mousePressed, state.availableIndex, items.length]
   );
 
   const gridStyle = useMemo(
@@ -379,7 +430,7 @@ export const ReorderableList = memo(function ReorderableList() {
               onPointerUp={onPointerUp}
               onPointerMove={onPointerMove}
               className={`select-none bg-slate-500 rounded-lg m-1 min-w-24 text-center ${
-                index === state.movingIndex
+                index === state.movingIndex && state.nextIndex === -1
                   ? "text-red-500 z-50"
                   : index === state.justReleasedIndex
                   ? "text-black z-50"
@@ -391,6 +442,7 @@ export const ReorderableList = memo(function ReorderableList() {
                 state.justPressedIndex,
                 state.justReleasedIndex,
                 state.availableIndex,
+                state.nextIndex,
                 itemWidth.current,
                 itemHeight.current
               )}
@@ -402,6 +454,8 @@ export const ReorderableList = memo(function ReorderableList() {
       </ul>
       <p>Moving index: {state.movingIndex}</p>
       <p>Available index: {state.availableIndex}</p>
+      <p>Released index: {state.justReleasedIndex}</p>
+      <p>Next index: {state.nextIndex}</p>
     </div>
   );
 });
