@@ -164,7 +164,7 @@ export const ReorderableList = memo(function ReorderableList() {
 
   useEffect(() => {
     if (state.justReleasedIndex !== -1) {
-      console.log("dispatch just released");
+      // console.log("dispatch just released");
       dispatch({ type: "JUST_RELEASED" });
     }
   }, [state.justReleasedIndex]);
@@ -182,23 +182,23 @@ export const ReorderableList = memo(function ReorderableList() {
     ) => {
       const style: React.CSSProperties = {};
       if (index === releasedIndex) {
-        console.log("released index");
+        // console.log("released index");
         // record exactly where the element was when it was released (so it can animate back to position)
         style.transform = `translateX(${state.mouseDelta[0]}px) translateY(${state.mouseDelta[1]}px) scale(1.1)`;
       } else if (index === nextIndex) {
-        console.log("next index");
+        // console.log("next index");
         const rowFrom = Math.floor(nextIndex / columns);
         const colFrom = Math.floor(nextIndex % columns);
         const rowTo = Math.floor(availableIndex / columns);
         const colTo = Math.floor(availableIndex % columns);
         const row = rowTo - rowFrom;
         const col = colTo - colFrom;
-        console.log(row, col);
+        // console.log(row, col);
         style.transform = `translateX(${itemWidth * col}px) translateY(${
           itemHeight * row
         }px) scale(1)`;
       } else if (index === pressedIndex || index === movingIndex) {
-        console.log("moving/pressed index");
+        // console.log("moving/pressed index");
         style.transform = `scale(1.1)`;
         style.position = "relative";
         style.left = `${state.mouseDelta[0]}px`;
@@ -231,12 +231,6 @@ export const ReorderableList = memo(function ReorderableList() {
           // push items back
           style.transform = `translateX(${-itemWidth}px)`;
         }
-      } else if (
-        releasedIndex !== -1 &&
-        (index <= releasedIndex || index >= releasedIndex)
-      ) {
-        // style.transition = "none";
-        // style.transform = `translateX(0px)`;
       }
       return style;
     },
