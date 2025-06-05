@@ -60,8 +60,6 @@ function reducer(state: State, action: Action): State {
         ...state,
         justReleasedIndex: -1,
         nextIndex: state.movingIndex,
-        // movingIndex: -1,
-        // availableIndex: -1,
       };
     case "TRANSITION_IN_ENDED":
       return {
@@ -99,9 +97,6 @@ function reducer(state: State, action: Action): State {
         ...state,
         mousePressed: false,
         justReleasedIndex: state.movingIndex,
-        // mouseDelta: action.delta,
-        // movingIndex: -1,
-        // availableIndex: -1,
       };
     case "POINTER_MOVE":
       return {
@@ -149,7 +144,7 @@ export const ReorderableList = memo(function ReorderableList() {
     availableIndex: -1, // index of slot to move moving element to
     justReleasedIndex: -1, // index of just released element (will be 'available' index after move)
     justPressedIndex: -1, // index of element pressed before becoming 'active' (moving)
-    nextIndex: -1,
+    nextIndex: -1, // moving index after element is released
     mouseDelta: [0, 0],
     mousePressed: false,
   };
@@ -284,11 +279,6 @@ export const ReorderableList = memo(function ReorderableList() {
         return;
       }
 
-      // const newItems = [...items];
-      // const [extracted] = newItems.splice(state.movingIndex, 1);
-      // newItems.splice(state.availableIndex, 0, extracted);
-      // setItems(newItems);
-
       const colm = state.movingIndex % columns;
       const rowm = Math.floor(state.movingIndex / columns);
       const cola = state.availableIndex % columns;
@@ -307,7 +297,6 @@ export const ReorderableList = memo(function ReorderableList() {
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLLIElement>) => {
-      // if (state.justPressedIndex !== -1 || state.availableIndex !== -1) {
       if (state.mousePressed) {
         dispatch({
           type: "POINTER_MOVE",
@@ -428,7 +417,11 @@ export const ReorderableList = memo(function ReorderableList() {
                   ? "text-red-500 z-50"
                   : index === state.justReleasedIndex
                   ? "text-black z-50"
-                  : "transition-transform duration-300"
+                  : state.availableIndex === -1 &&
+                    state.movingIndex === -1 &&
+                    state.nextIndex === -1
+                  ? ""
+                  : "transition-transform duration-[2s]"
               }`}
               style={getStyle(
                 index,
