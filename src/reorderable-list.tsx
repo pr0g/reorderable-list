@@ -433,6 +433,8 @@ export const ReorderableList = memo(function ReorderableList() {
           );
         })}
       </ul>
+      <br />
+      <h2 className="text-l font-bold underline">Debug</h2>
       <p>Moving index: {state.movingIndex}</p>
       <p>Available index: {state.availableIndex}</p>
       <p>Released index: {state.justReleasedIndex}</p>

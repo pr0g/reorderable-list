@@ -1,44 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-
 import { ReorderableList } from "./reorderable-list";
-import { Link } from "react-router";
-import { useEffectEvent } from "use-effect-event";
 
 export const App = () => {
-  const [count, setCount] = useState(0);
-  const [name, setName] = useState("John");
-  const [combined, setCombined] = useState("");
-
-  const combine = useEffectEvent((n: string) => {
-    setCombined(n + " " + count);
-  });
-  
-  useEffect(() => {
-    console.log("name changed!");
-    combine(name);
-  }, [name]);
-
-  const onClick = useCallback(() => {
-    setCount((count) => count + 1);
-  }, []);
-
-  const buttonStyle = useMemo(() => {
-    return { display: "block" };
-  }, []);
-
   return (
     <>
       <h1 className="sm:text-3xl text-2xl font-bold underline bg-gray-300">
-        DEMO APP
+        Reorderable list
       </h1>
-      <button onClick={onClick}>The count is: {count}</button>
-      <button style={buttonStyle} onClick={() => setName((name) => name + "a")}>
-        Change name - {combined}
-      </button>
-      <Link to="/blank" id="back-link">
-        Go to BLANK
-      </Link>
-
       <div className="flex flex-row justify-center py-40">
         <ReorderableList />
       </div>
